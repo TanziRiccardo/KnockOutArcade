@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <!-- Testo "GAME OVER" -->
+    <TextView
+        android:id="@+id/gameOverText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="G A M E   O V E R"
+        android:textColor="#FFFF00"
+        android:textSize="48sp"
+        android:fontFamily="@font/creepsterregular"
+        android:textStyle=""
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="95dp" />
+
+    <ListView
+        android:id="@+id/scoreListView"
+        android:layout_width="match_parent"
+        android:layout_height="375dp"
+        android:layout_below="@id/gameOverText"
+        android:layout_marginTop="35dp"
+        android:layout_marginBottom="10dp"
+        android:divider="@color/black"
+        android:dividerHeight="1dp" />
+
+    <Button
+        android:id="@+id/restart_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="50dp"
+        android:layout_marginBottom="200dp"
+        android:backgroundTint="@color/black"
+        android:textColor="@color/white"
+        android:fontFamily="@font/creepsterregular"
+        android:text="N u o v a   P a r t i t a"
+        android:visibility="visible" />
+    <!-- Copyright -->
+    <ImageView
+        android:id="@+id/splashID"
+        android:layout_width="wrap_content"
+        android:layout_height="30dp"
+        android:layout_marginStart="0dp"
+        android:layout_marginLeft="250dp"
+        android:layout_marginTop="750dp"
+        android:src="@drawable/marchio"
+        android:visibility="visible" />
+
+</RelativeLayout>

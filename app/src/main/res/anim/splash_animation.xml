@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- res/anim/logo_scale_in.xml -->
+<set xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Effetto di traslazione -->
+    <translate
+        android:fromXDelta="0%"
+        android:toXDelta="0%"
+        android:fromYDelta="-50%"
+        android:toYDelta="0%"
+        android:duration="1000"
+        android:startOffset="0"/>
+</set>

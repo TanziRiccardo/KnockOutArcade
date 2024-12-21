@@ -17,7 +17,7 @@ public class MainActivity extends AppCompatActivity {
         int screenWidth = displayMetrics.widthPixels;
         int screenHeight = displayMetrics.heightPixels;
         // Mostra le dimensioni dello schermo per il debug
-        Toast.makeText(this, "Screen Width: " + screenWidth + ", Screen Height: " + screenHeight, Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "Screen Width: " + screenWidth + ", Screen Height: " + screenHeight, Toast.LENGTH_SHORT).show();
 
         // Inizializza la GameView con le dimensioni dello schermo
         gameView = new GameView(this, screenWidth, screenHeight);

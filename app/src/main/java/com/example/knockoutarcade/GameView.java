@@ -1,23 +1,38 @@
 package com.example.knockoutarcade;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Shader;
 import android.os.AsyncTask;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.LinearInterpolator;
 import android.widget.Toast;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -58,7 +73,8 @@ public class GameView extends SurfaceView implements Runnable {
 
     // Variabile booleana per avviare il movimento dei bot solo la prima volta che viene chiamato onDraw
     private boolean firstTimeDraw = true;
-
+    private int[] rowHeights;
+    private int[] columnWidths;
     private static final int TRAIL_LIFETIME = 3000; // Durata di ogni traccia in millisecondi
     public GameView(Context context, int screenWidth, int screenHeight) {
         super(context);
@@ -84,24 +100,42 @@ public class GameView extends SurfaceView implements Runnable {
         fieldWidth = background.getWidth();
         fieldHeight = screenHeight;
         screenWidthapp = screenWidth;
-        player = new Player(context, R.drawable.player_bross, screenWidth, screenHeight, 6, fieldWidth / 2, fieldHeight - 200);
         trails = new ArrayList<>();
-
-        initializePlayerPosition();
+        // Definisci larghezze delle colonne (valori personalizzabili)
+        columnWidths = new int[]{202, 202, 202, 202, 202};
+        // Definisci altezze delle righe (valori personalizzabili)
+        rowHeights = new int[]{486, 350, 486, 350, 486};
         Bitmap sceneBitmap = getBitmapFromScene();
         initializeWalkableMap(sceneBitmap);
-        Bot bot = new Bot(walkableMap, (int) player.getX(), (int) player.getY());
+        player = new Player(context, R.drawable.player_bross, screenWidth, screenHeight, 6, fieldWidth / 2, fieldHeight - 200, walkableMap);
+        initializePlayerPosition();
         bots = new ArrayList<>(); // Inizializza la lista
         initializeBots(); // Aggiungi bot alla lista
+
         tolerance = 5;
     }
 
     private void initializeBots() {
             bots = new ArrayList<>();
+        // Calcolare la posizione del primo bot tra la prima e la seconda riga
+        int firstBotY = rowHeights[0] + (rowHeights[1] - rowHeights[0]) / 2; // Posizione tra prima e seconda riga
+        int firstBotX = columnWidths[1] + 30; // Colonna tra la prima e la seconda colonna
 
-        // Posiziona i bot su linee bianche specifiche della griglia
-        bots.add(new Bot(walkableMap, fieldWidth / 4, fieldHeight / 5)); // Posizione sulla prima linea bianca
-        bots.add(new Bot(walkableMap, 2 * fieldWidth / 4, 2 * fieldHeight / 5)); // Posizione su un'altra linea bianca
+        // Calcolare la posizione del secondo bot tra l'ultima e la penultima riga
+        int secondBotY = 600; // Posizione tra l'ultima e la penultima riga
+        int secondBotX = 556; // Colonna tra l'ultima e la penultima colonna
+
+        // Posizionare i bot
+        Bot luigiBot = new Bot(getContext(), R.drawable.luigi_bot, walkableMap, firstBotX, firstBotY, Bot.BotType.LUIGI, screenWidthapp, fieldHeight); // Primo bot
+        Bot toadBot = new Bot(getContext(), R.drawable.toad_bot, walkableMap, 231, 1787, Bot.BotType.TOAD, screenWidthapp, fieldHeight); // Secondo bot
+        Bot fireBot = new Bot(getContext(), R.drawable.fire_bot, walkableMap, 838, 1787, Bot.BotType.FIRE, screenWidthapp, fieldHeight);
+        bots.add(luigiBot);
+        bots.add(toadBot);
+        bots.add(fireBot);
+        for (Bot bot : bots){
+            bot.setAllBots(bots);
+        }
+
     }
 
     @Override
@@ -112,46 +146,9 @@ public class GameView extends SurfaceView implements Runnable {
             sleep();
         }
     }
-    private void startDirectionTimeout() {
-        if (stopMovementTask != null) {
-            handler.removeCallbacks(stopMovementTask);
-        }
-
-        waitingForDirection = true;
-
-        stopMovementTask = () -> {
-            if (waitingForDirection) {
-                stopPlayer(); // Ferma il player se non è stata scelta una direzione
-            }
-        };
-
-        handler.postDelayed(stopMovementTask, DIRECTION_TIMEOUT);
-    }
-
-    private void stopPlayer() {
-        player.setSpeed(0, 0);
-        currentDirectionX = 0;
-        currentDirectionY = 0;
-        waitingForDirection = false;
-    }
-    private void changeDirection(int desiredX, int desiredY) {
-        if (isNearIntersection) {
-            handler.removeCallbacks(stopMovementTask); // Interrompi il timer
-            waitingForDirection = false;
-
-            if (desiredX != 0 && canMoveTo((int) player.getX() + desiredX * 10, (int) player.getY())) {
-                currentDirectionX = desiredX;
-                currentDirectionY = 0;
-            } else if (desiredY != 0 && canMoveTo((int) player.getX(), (int) player.getY() + desiredY * 10)) {
-                currentDirectionX = 0;
-                currentDirectionY = desiredY;
-            }
-        }
-    }
-
     private void initializePlayerPosition() {
         // Calcola le dimensioni delle celle
-        float cellWidth = (float) fieldWidth / 4;   // Usa float per precisione
+        float cellWidth = (float) fieldWidth / 5;   // Usa float per precisione
         float cellHeight = (float) fieldHeight / 5; // Usa float per precisione
 
         // Posizione iniziale sulla griglia (centrato sulla cella centrale)
@@ -162,75 +159,106 @@ public class GameView extends SurfaceView implements Runnable {
         player.setY((int) startY); // Posizione iniziale del giocatore in Y
     }
 
-
     public void update() {
         for (Bot bot : bots) {
             bot.setTarget((int) player.getX(), (int) player.getY()); // Passa le coordinate del giocatore come target
+            bot.bot_update();
         }
         player.update(); // Aggiorna animazioni o stato del giocatore
 
-        if (waitingForDirection) {
-            // Il giocatore è in attesa di una direzione, quindi non muoviamolo
-            return;
-        }
 
-        int nextX = (int) player.getX() + currentDirectionX * player.getSpeedX();
-        int nextY = (int) player.getY() + currentDirectionY * player.getSpeedY();
-
-        if (canMoveTo(nextX, (int) player.getY()) && currentDirectionX != 0) {
-            player.setX(nextX);
-        } else if (canMoveTo((int) player.getX(), nextY) && currentDirectionY != 0) {
-            player.setY(nextY);
-        }
-
-        if (isNearIntersection()) {
-            alignToGrid(); // Allinea il giocatore
-            isNearIntersection = true;
-        } else {
-            isNearIntersection = false;
-        }
 
         for (Bot bot: bots){
             bot.moveBotTowardsTarget();
-        }
 
-        // Dimensione dell'area statica (margini ai bordi)
-        int staticAreaMargin = 10; // Imposta un margine per il movimento dello sfondo (puoi regolare questo valore)
-
-        // Controlla se il giocatore si avvicina ai bordi
-        if (player.getX() < staticAreaMargin) {
-            // Sposta lo sfondo a destra (solo quando il giocatore è a sinistra)
-            backgroundSpeed = 5;
-            if (player.getSpeedX() == 0) {
-                backgroundSpeed = 0;
+            if(checkCollision(player, bot)){
+                handleCollision(player, bot);
             }
-        } else if (player.getX() > screenWidthapp - staticAreaMargin - player.getWidth()) {
-            // Sposta lo sfondo a sinistra (solo quando il giocatore è a destra)
-            backgroundSpeed = -5;
-            if (player.getSpeedX() == 0) {
-                backgroundSpeed = 0;
-            }
-        } else {
-            // Lo sfondo resta immobile (quando il giocatore non è vicino ai bordi)
-            backgroundSpeed = 0;
         }
-
-        // Blocca il giocatore all'interno dei confini dello schermo
+        // Sposta il giocatore al lato opposto quando tocca un bordo
         if (player.getX() < 0) {
-            player.setX(0);
+            player.setX(screenWidthapp - player.getWidth()); // Compara al lato destro
         } else if (player.getX() + player.getWidth() > screenWidthapp) {
-            player.setX(screenWidthapp - player.getWidth());
+            player.setX(0); // Compara al lato sinistro
         }
+
         if (player.getY() < 0) {
-            player.setY(0);
+            player.setY(fieldHeight - player.getHeight()); // Compara al lato inferiore
         } else if (player.getY() + player.getHeight() > fieldHeight) {
-            player.setY(fieldHeight - player.getHeight());
+            player.setY(0); // Compara al lato superiore
         }
-        // Aggiorna la posizione dello sfondo in base alla velocità
-        updateBackgroundPosition();
     }
 
+    public boolean checkCollision(Player player, Bot bot) {
+        // Ottieni le coordinate e le dimensioni del player
+        float playerLeft = player.getX();
+        float playerTop = player.getY();
+        float playerRight = player.getX() + player.getWidth();
+        float playerBottom = player.getY() + player.getHeight();
 
+        // Ottieni le coordinate e le dimensioni del bot
+        float botLeft = bot.getX();
+        float botTop = bot.getY();
+        float botRight = bot.getX() + (bot.getWidth()/9);
+        float botBottom = bot.getY() + (bot.getHeight()/2);
+// Log per stampare i dati
+        Log.d("Collision Info", "Player Coordinates: Left=" + playerLeft + ", Top=" + playerTop + ", Right=" + playerRight + ", Bottom=" + playerBottom);
+        Log.d("Collision Info", "Bot Coordinates: Left=" + botLeft + ", Top=" + botTop + ", Right=" + botRight + ", Bottom=" + botBottom);
+        // Verifica se le due bounding boxes si sovrappongono
+        int tolerance = 30; //i bot si avvicinano il più possibile al player
+        return playerRight >= botLeft + tolerance && playerLeft + tolerance <= botRight  &&
+                playerBottom >= botTop + tolerance && playerTop + tolerance <= botBottom;
+    }
+    public void handleCollision(Player player, Bot bot) {
+            Log.d("Collision Info", "ESCE");
+        // 1. Anima il giocatore verso il basso
+        animatePlayerFall(player);
+
+        animateScreenClose();
+            // Aggiungi logica per reazioni diverse alla collisione, ad esempio:
+            // - Rallenta il giocatore
+            // - Cambia direzione del giocatore
+            // - Esegui altre azioni
+
+    }
+    private void animatePlayerFall(Player player) {
+        Handler mainHandler = new Handler(Looper.getMainLooper());
+        mainHandler.post(() -> {
+            // Animazione per far cadere il player verso il basso
+            ValueAnimator fallAnimator = ValueAnimator.ofFloat(player.getY(), fieldHeight);
+            fallAnimator.setDuration(1000);
+            fallAnimator.setInterpolator(new LinearInterpolator());
+
+            fallAnimator.addUpdateListener(animation -> {
+                float newY = (float) animation.getAnimatedValue();
+                player.setY(newY);
+
+                // Forza il ridisegno della GameView
+                invalidate();
+            });
+
+            // Avvia l'animazione
+            fallAnimator.start();
+        });
+    }
+    private float screenCloseProgress = 0f; // Valore iniziale di progresso
+    private void animateScreenClose() {
+        this.post(() -> { // Questo assicura che il codice venga eseguito nel UI Thread
+            // Animator per chiudere lo schermo
+            ValueAnimator closeAnimator = ValueAnimator.ofFloat(0f, 1f);
+            closeAnimator.setDuration(1000); // Durata dell'animazione
+            closeAnimator.setInterpolator(new LinearInterpolator());
+
+            closeAnimator.addUpdateListener(animation -> {
+                float progress = (float) animation.getAnimatedValue();
+                // Logica per disegnare l'animazione di chiusura
+                screenCloseProgress = progress; // Variabile globale per il progresso
+                invalidate(); // Richiede il ridisegno della GameView
+            });
+
+            closeAnimator.start();
+        });
+    }
     public Bitmap getBitmapFromScene() {
         // Crea un Bitmap con le dimensioni della scena
         Bitmap bitmap = Bitmap.createBitmap(screenWidthapp, fieldHeight, Bitmap.Config.ARGB_8888);
@@ -255,8 +283,6 @@ public class GameView extends SurfaceView implements Runnable {
 
         return bitmap;
     }
-
-
     public void initializeWalkableMap(Bitmap sceneBitmap) {
         int width = sceneBitmap.getWidth();
         int height = sceneBitmap.getHeight();
@@ -270,9 +296,9 @@ public class GameView extends SurfaceView implements Runnable {
                 int blue = Color.blue(pixelColor);
 
                 int tolerance = 10;
-                walkableMap[x][y] = Math.abs(red - 255) < tolerance &&
-                        Math.abs(green - 255) < tolerance &&
-                        Math.abs(blue - 255) < tolerance;
+                walkableMap[x][y] = Math.abs(red - 0) < tolerance &&
+                        Math.abs(green - 195) < tolerance &&
+                        Math.abs(blue - 222) < tolerance;
             }
         }
     }
@@ -283,39 +309,6 @@ public class GameView extends SurfaceView implements Runnable {
         }
         return walkableMap[x][y];
     }
-    private void alignToGrid() {
-        int cellWidth = fieldWidth / 4;
-        int cellHeight = fieldHeight / 5;
-
-        int playerX = (int) player.getX();
-        int playerY = (int) player.getY();
-
-        // Allinea il giocatore orizzontalmente
-        if (currentDirectionX != 0) {
-            player.setY(Math.round(playerY / (float) cellHeight) * cellHeight);
-        }
-
-        // Allinea il giocatore verticalmente
-        if (currentDirectionY != 0) {
-            player.setX(Math.round(playerX / (float) cellWidth) * cellWidth);
-        }
-    }
-
-    private boolean isNearIntersection() {
-        int cellWidth = fieldWidth / 4;
-        int cellHeight = fieldHeight / 5;
-
-        int playerX = (int) player.getX();
-        int playerY = (int) player.getY();
-
-        int offsetX = playerX % cellWidth;
-        int offsetY = playerY % cellHeight;
-
-        // Controlla se il giocatore è entro una tolleranza (es. 5 pixel) dall'incrocio
-        return offsetX <= 5 || (cellWidth - offsetX) <= 5 ||
-                offsetY <= 5 || (cellHeight - offsetY) <= 5;
-    }
-    
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         int action = event.getAction();
@@ -325,30 +318,43 @@ public class GameView extends SurfaceView implements Runnable {
         // Impostiamo isPadVisible a true quando il giocatore tocca lo schermo
         if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_MOVE) {
             isPadVisible = true;
-            waitingForDirection = false;
             handler.removeCallbacks(stopMovementTask); // Interrompi il timer
         } else if (action == MotionEvent.ACTION_UP) {
             isPadVisible = false;
             desiredDirectionX = 0;
             desiredDirectionY = 0;
+            player.setSpeed(0,0);
         }
 
         // Calcoliamo la larghezza e l'altezza delle celle
-        float cellWidth = (float) fieldWidth / 4;
+        float cellWidth = (float) fieldWidth / 5;
         float cellHeight = (float) fieldHeight / 5;
 
         // Controllo del movimento
         if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_MOVE) {
             // Verifica se il giocatore vuole andare a destra
             if (isTouchInsideArea(touchX, touchY, screenWidthapp - 650, fieldHeight - 250, 100, 100)) {
-                if (player.getX() + player.getWidth() < (cellWidth * 3)) {
+                Log.d("Movement", "cliccato destra");
+                Log.d("Movementyyyyy", "player.getX(): " + player.getX() + "player.getWidth()" + player.getWidth() + "CellWidth: " + cellWidth*3);
+                if (player.getX() + player.getWidth() < (cellWidth * 3) || player.getX() + player.getWidth() > (cellWidth * 3)) {
                     int newX = (int) (player.getX() + player.getWidth() + 1);
                     if (canMoveTo(newX, (int) player.getY() + 1) ||
                             canMoveTo(newX, (int) player.getY() + player.getHeight() / 2) ||
                             canMoveTo(newX, (int) player.getY() + player.getHeight() - 1)) {
+                        // Imposta la velocità e la direzione desiderata
                         player.setSpeed(10, player.getSpeedY());
                         desiredDirectionX = 1;
                         desiredDirectionY = 0;
+                        // Verifica se il giocatore è all'incrocio
+                        if (player.isNearIntersection()) {
+                            // Quando il giocatore è all'incrocio, controlla la direzione
+                            if (desiredDirectionX != 0 || desiredDirectionY != 0) {
+                                player.moveToNextIntersection();
+                                // Muovi il giocatore nella direzione richiesta
+                                player.turnToRequestedDirection(desiredDirectionX, desiredDirectionY);
+                                Log.d("Movement", "Player moving towards desired direction");
+                            }
+                        }
                         Log.d("Movement", "Moving right");
                     } else {
                         Log.d("Movement", "Blocked right");
@@ -357,14 +363,25 @@ public class GameView extends SurfaceView implements Runnable {
             }
             // Verifica se il giocatore vuole andare a sinistra
             else if (isTouchInsideArea(touchX, touchY, screenWidthapp - 950, fieldHeight - 250, 100, 100)) {
-                if (player.getX() > cellWidth) {
+                if (player.getX() > cellWidth || player.getX() < cellWidth) {
                     int newX = (int) (player.getX() - 1);
                     if (canMoveTo(newX, (int) player.getY() + 1) ||
                             canMoveTo(newX, (int) player.getY() + player.getHeight() / 2) ||
                             canMoveTo(newX, (int) player.getY() + player.getHeight() - 1)) {
+                        // Imposta la velocità e la direzione desiderata
                         player.setSpeed(-10, player.getSpeedY());
                         desiredDirectionX = -1;
                         desiredDirectionY = 0;
+                        // Verifica se il giocatore è all'incrocio
+                        if (player.isNearIntersection()) {
+                            // Quando il giocatore è all'incrocio, controlla la direzione
+                            if (desiredDirectionX != 0 || desiredDirectionY != 0) {
+                                player.moveToNextIntersection();
+                                // Muovi il giocatore nella direzione richiesta
+                                player.turnToRequestedDirection(desiredDirectionX, desiredDirectionY);
+                                Log.d("Movement", "Player moving towards desired direction");
+                            }
+                        }
                         Log.d("Movement", "Moving left");
                     } else {
                         Log.d("Movement", "Blocked left");
@@ -373,12 +390,23 @@ public class GameView extends SurfaceView implements Runnable {
             }
             // Verifica se il giocatore vuole andare su
             else if (isTouchInsideArea(touchX, touchY, screenWidthapp - 800, fieldHeight - 400, 100, 100)) {
-                if (player.getY() > cellHeight) {
+                if (player.getY() + player.getHeight() > (cellHeight) || player.getY() + player.getHeight() < (cellHeight)) {
                     int newY = (int) (player.getY() - 5);
                     if (canMoveTo((int) player.getX() + player.getWidth() / 2, newY)) {
+                        // Imposta la velocità e la direzione desiderata
                         player.setSpeed(player.getSpeedX(), -10);
                         desiredDirectionX = 0;
                         desiredDirectionY = -1;
+                        // Verifica se il giocatore è all'incrocio
+                        if (player.isNearIntersection()) {
+                            // Quando il giocatore è all'incrocio, controlla la direzione
+                            if (desiredDirectionX != 0 || desiredDirectionY != 0) {
+                                player.moveToNextIntersection();
+                                // Muovi il giocatore nella direzione richiesta
+                                player.turnToRequestedDirection(desiredDirectionX, desiredDirectionY);
+                                Log.d("Movement", "Player moving towards desired direction");
+                            }
+                        }
                         Log.d("Movement", "Moving up");
                     } else {
                         Log.d("Movement", "Blocked up");
@@ -387,12 +415,23 @@ public class GameView extends SurfaceView implements Runnable {
             }
             // Verifica se il giocatore vuole andare giù
             else if (isTouchInsideArea(touchX, touchY, screenWidthapp - 800, fieldHeight - 100, 100, 100)) {
-                if (player.getY() + player.getHeight() < (cellHeight * 4)) {
-                    int newY = (int) (player.getY() + player.getHeight() + 1);
+                if (player.getY() + player.getHeight() < (cellHeight * 5)) {
+                    int newY = (int) (player.getY() + player.getHeight() + 5);
                     if (canMoveTo((int) player.getX() + player.getWidth() / 2, newY)) {
+                        // Imposta la velocità e la direzione desiderata
                         player.setSpeed(player.getSpeedX(), 10);
                         desiredDirectionX = 0;
                         desiredDirectionY = 1;
+                        // Verifica se il giocatore è all'incrocio
+                        if (player.isNearIntersection()) {
+                            // Quando il giocatore è all'incrocio, controlla la direzione
+                            if (desiredDirectionX != 0 || desiredDirectionY != 0) {
+                                player.moveToNextIntersection();
+                                // Muovi il giocatore nella direzione richiesta
+                                player.turnToRequestedDirection(desiredDirectionX, desiredDirectionY);
+                                Log.d("Movement", "Player moving towards desired direction");
+                            }
+                        }
                         Log.d("Movement", "Moving down");
                     } else {
                         Log.d("Movement", "Blocked down");
@@ -402,6 +441,7 @@ public class GameView extends SurfaceView implements Runnable {
         }
         return true;
     }
+
 
 
 
@@ -419,17 +459,15 @@ public class GameView extends SurfaceView implements Runnable {
     }
 
     private void drawGame(Canvas canvas) {
-        Paint botpaint = new Paint();
-        botpaint.setColor(Color.YELLOW);
         // Cancella il canvas
-        canvas.drawColor(Color.parseColor("#1D481D"));
+        canvas.drawColor(Color.BLACK);
 
         // Disegna lo sfondo
         updateBackgroundPosition();
         canvas.drawBitmap(background, -backgroundOffsetX, 0, null);
 
         drawGrid(canvas);
-        drawTrails(canvas); // Disegna le tracce
+        drawFieldBorder(canvas);
         // Disegna la base del pad e le frecce, se il pad è visibile
         if (isPadVisible) {
             drawDirectionPad(canvas);
@@ -437,28 +475,106 @@ public class GameView extends SurfaceView implements Runnable {
 
         if (bots != null) {
             for (Bot bot : bots) {
-                canvas.drawCircle(bot.getX(), bot.getY(), 20, botpaint); // Disegna il bot
+                bot.draw_bot(canvas);
             }
         }
         // Disegna il giocatore
         player.draw(canvas);
+        // Crea un Paint per i rettangoli
+        Paint rectPaint = new Paint();
+        rectPaint.setStyle(Paint.Style.STROKE); // Modalità bordo (no riempimento)
+        rectPaint.setColor(Color.RED);          // Colore del rettangolo
+        rectPaint.setStrokeWidth(5);            // Spessore della linea
 
-    }
+        // Disegna il rettangolo del giocatore
+        float playerLeft = player.getX();
+        float playerTop = player.getY();
+        float playerRight = player.getX() + player.getWidth();
+        float playerBottom = player.getY() + player.getHeight();
+        canvas.drawRect(playerLeft, playerTop, playerRight, playerBottom, rectPaint);
 
-    private void drawTrails(Canvas canvas) {
-        Paint trailPaint = new Paint();
-        trailPaint.setColor(Color.YELLOW);
-        trailPaint.setStyle(Paint.Style.FILL);
-
-        for (Trail trail : trails) {
-            canvas.drawRect(
-                    trail.getX(),
-                    trail.getY(),
-                    trail.getX() + player.getWidth() / 2,
-                    trail.getY() + player.getHeight() / 2,
-                    trailPaint
-            );
+        // Disegna i rettangoli dei bot
+        for (Bot bot : bots) {
+            float botLeft = bot.getBotX();
+            float botTop = bot.getBotY();
+            float botRight = botLeft + (bot.getWidth() / 9);
+            float botBottom = botTop + (bot.getHeight() / 3);
+            canvas.drawRect(botLeft, botTop, botRight, botBottom, rectPaint);
         }
+
+        // Effetto di chiusura dello schermo (cerchio nero)
+        if (screenCloseProgress > 0) {
+            int centerX = getWidth() / 2;
+            int centerY = getHeight() / 2;
+            float maxRadius = (float) Math.hypot(centerX, centerY);
+            float currentRadius = maxRadius * (1 - screenCloseProgress);
+
+            Paint blackPaint = new Paint();
+            blackPaint.setColor(Color.BLACK);
+
+            // Disegna il cerchio nero
+            canvas.drawCircle(centerX, centerY, currentRadius, blackPaint);
+
+                showGameOverScreen(); // Chiama il metodo per mostrare la schermata di Game Over
+
+
+        }
+    }
+    // Metodo per salvare il punteggio
+    private void savePlayerScore(Context context, int score) {
+        SharedPreferences prefs = context.getSharedPreferences("GamePrefs", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+
+        // Recupera i punteggi esistenti
+        String json = prefs.getString("scores", null);
+        List<Integer> scores;
+        if (json != null) {
+            Type type = new TypeToken<List<Integer>>() {}.getType();
+            scores = new Gson().fromJson(json, type);
+        } else {
+            scores = new ArrayList<>();
+        }
+
+        // Aggiungi il punteggio attuale
+        scores.add(score);
+
+        // Salva nuovamente i punteggi come JSON
+        String updatedJson = new Gson().toJson(scores);
+        editor.putString("scores", updatedJson);
+        editor.apply();
+    }
+    private void showGameOverScreen() {
+        Intent intent = new Intent(getContext(), GameOverActivity.class);
+        savePlayerScore(getContext(), player.getCounterPoints()); // Passa il punteggio del giocatore
+        getContext().startActivity(intent);
+    }
+    private void drawFieldBorder(Canvas canvas) {
+        // Carica il Bitmap del bordo
+        Bitmap borderBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.borderbitmap);
+
+        int borderWidth = 30; // Spessore del bordo
+
+        // Crea un Bitmap scalato in base alla larghezza del bordo
+        int scaledSize = borderWidth; // Il bordo dovrebbe avere larghezza uguale al quadrato
+        Bitmap scaledBitmap = Bitmap.createScaledBitmap(borderBitmap, scaledSize, scaledSize, false);
+
+        // Configura il BitmapShader con TileMode.REPEAT
+        BitmapShader borderShader = new BitmapShader(scaledBitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
+
+        Paint borderPaint = new Paint();
+        borderPaint.setShader(borderShader);
+
+        // Disegna il bordo superiore
+        canvas.drawRect(0, 0, screenWidthapp, borderWidth, borderPaint);
+
+        // Disegna il bordo inferiore
+        canvas.drawRect(0, fieldHeight - borderWidth, screenWidthapp, fieldHeight, borderPaint);
+
+        // Disegna il bordo sinistro
+        canvas.drawRect(0, 0, borderWidth, fieldHeight, borderPaint);
+
+        // Disegna il bordo destro
+        canvas.drawRect(screenWidthapp - borderWidth, 0, screenWidthapp, fieldHeight, borderPaint);
     }
     private void drawDirectionPad(Canvas canvas) {
 
@@ -468,31 +584,36 @@ public class GameView extends SurfaceView implements Runnable {
         canvas.drawBitmap(leftArrow, screenWidthapp - 950, fieldHeight - 250, paint);  // Freccia sinistra
         canvas.drawBitmap(rightArrow, screenWidthapp - 650, fieldHeight - 250, paint);  // Freccia destra
     }
-
     private void drawGrid(Canvas canvas) {
         Paint gridPaint = new Paint();
-        gridPaint.setColor(Color.argb(255, 255, 255, 255)); // Bianco opaco
-        gridPaint.setStrokeWidth(10);
+        gridPaint.setColor(Color.argb(255, 0, 195, 222)); // Colore della griglia
+        gridPaint.setStrokeWidth(25);
 
-        int numColumns = 4; // Numero di colonne
-        int numRows = 5; // Numero di righe
-        int cellWidth = screenWidthapp / numColumns; // Larghezza delle celle
-        int cellHeight = fieldHeight / numRows; // Altezza delle celle
+        int borderWidth = 30; // Spessore del bordo decorativo
 
-        // Disegna linee verticali
-        for (int i = 0; i <= numColumns; i++) { // Aggiungi una linea in più per il bordo finale
-            float x = i * cellWidth;
-            canvas.drawLine(x, 0, x, fieldHeight, gridPaint);
+        // Definisci larghezze delle colonne (valori personalizzabili)
+        int[] columnWidths = {202, 202, 202, 202, 202};
+        // Definisci altezze delle righe (valori personalizzabili)
+        int[] rowHeights = {486, 350, 486, 350, 486};
+
+        // Calcola la posizione delle linee verticali tenendo conto del bordo
+        int currentX = borderWidth;
+        for (int i = 0; i <= columnWidths.length; i++) {
+            canvas.drawLine(currentX, borderWidth, currentX, fieldHeight - borderWidth, gridPaint); // Linee verticali
+            if (i < columnWidths.length) {
+                currentX += columnWidths[i];
+            }
         }
 
-        // Disegna linee orizzontali
-        for (int j = 0; j <= numRows; j++) { // Aggiungi una linea in più per il bordo finale
-            float y = j * cellHeight;
-            canvas.drawLine(0, y, screenWidthapp, y, gridPaint);
+        // Calcola la posizione delle linee orizzontali tenendo conto del bordo
+        int currentY = borderWidth;
+        for (int j = 0; j <= rowHeights.length; j++) {
+            canvas.drawLine(borderWidth, currentY, screenWidthapp - borderWidth, currentY, gridPaint); // Linee orizzontali
+            if (j < rowHeights.length) {
+                currentY += rowHeights[j];
+            }
         }
-
     }
-
     private void updateBackgroundPosition() {
         if (backgroundSpeed != 0) {
             // Muove lo sfondo in base alla velocità del giocatore
@@ -506,8 +627,6 @@ public class GameView extends SurfaceView implements Runnable {
             backgroundOffsetX = 0;
         }
     }
-
-
     public boolean[][] getWalkableMap() {
         return walkableMap;
     }

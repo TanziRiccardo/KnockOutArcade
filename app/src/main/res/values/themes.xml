@@ -4,6 +4,10 @@
         <!-- Customize your light theme here. -->
         <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
     </style>
-
+    <!-- Tema personalizzato per il bottone -->
+    <style name="CustomButtonStyle" parent="Widget.AppCompat.Button">
+        <item name="android:background">@drawable/button_background</item>  <!-- Sfondo nero -->
+        <item name="android:textColor">#FFFFFF</item>  <!-- Testo bianco -->
+    </style>
     <style name="Theme.KnockOutArcade" parent="Base.Theme.KnockOutArcade" />
 </resources>

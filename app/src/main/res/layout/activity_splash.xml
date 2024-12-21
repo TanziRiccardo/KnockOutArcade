@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/black">
+
+    <ImageView
+        android:id="@+id/splash_logo_first"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_centerInParent="true"
+        android:scaleType="fitXY"
+        android:src="@drawable/splash_logo_first"
+        android:visibility="visible" />
+    <!-- Logo o immagine da animare -->
+    <ImageView
+        android:id="@+id/splash_logo"
+        android:layout_width="410dp"
+        android:layout_height="729dp"
+        android:layout_centerInParent="true"
+        android:src="@drawable/logo"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/characters"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="105dp"
+        android:layout_marginTop="90dp"
+        android:fontFamily="@font/creepsterregular"
+        android:text="C H A R A C T E R S"
+        android:textColor="#F4F000"
+        android:textSize="30sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Primo bot: TextView + ImageView -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="160dp"
+            android:layout_marginBottom="25dp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/bot_image_view_1"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_marginStart="35dp"
+                android:layout_marginEnd="55dp"
+                android:scaleType="fitXY"
+                android:src="@drawable/luigi_block"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/bot_name_text_view_1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:textColor="#21AD10"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <!-- Secondo bot: TextView + ImageView -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/bot_image_view_2"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_marginStart="35dp"
+                android:layout_marginEnd="55dp"
+                android:scaleType="fitXY"
+                android:src="@drawable/toad_block"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/bot_name_text_view_2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:textColor="@android:color/holo_blue_bright"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <!-- Terzo bot: TextView + ImageView -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/bot_image_view_3"
+                android:layout_width="50dp"
+                android:layout_height="70dp"
+                android:layout_marginStart="50dp"
+                android:layout_marginEnd="55dp"
+                android:src="@drawable/fire_block"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/bot_name_text_view_3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginStart="35dp"
+                android:textColor="#F3380A"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </LinearLayout>
+
+
+    </LinearLayout>
+    <ImageView
+        android:id="@+id/splashID"
+        android:layout_width="wrap_content"
+        android:layout_height="30dp"
+        android:layout_marginStart="0dp"
+        android:layout_marginLeft="250dp"
+        android:layout_marginTop="650dp"
+        android:src="@drawable/marchio"
+        android:visibility="gone" />
+</RelativeLayout>
