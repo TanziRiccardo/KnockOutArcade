@@ -232,23 +232,19 @@ public class GameView extends SurfaceView implements Runnable {
             }
         }
 
-
         // 1. Anima il giocatore verso il basso
         animatePlayerFall(player);
 
-        animateScreenClose();
-            // Aggiungi logica per reazioni diverse alla collisione, ad esempio:
-            // - Rallenta il giocatore
-            // - Cambia direzione del giocatore
-            // - Esegui altre azioni
-
+        // 2. Aggiungi un ritardo per far partire la chiusura dello schermo dopo la caduta
+        new Handler(Looper.getMainLooper()).postDelayed(this::animateScreenClose, 1000);  // Ritardo di 1 secondo
     }
+
     private void animatePlayerFall(Player player) {
         Handler mainHandler = new Handler(Looper.getMainLooper());
         mainHandler.post(() -> {
             // Animazione per far cadere il player verso il basso
             ValueAnimator fallAnimator = ValueAnimator.ofFloat(player.getY(), fieldHeight);
-            fallAnimator.setDuration(1000);
+            fallAnimator.setDuration(2000);  // Durata più lunga per l'animazione di caduta
             fallAnimator.setInterpolator(new LinearInterpolator());
 
             fallAnimator.addUpdateListener(animation -> {
@@ -263,6 +259,7 @@ public class GameView extends SurfaceView implements Runnable {
             fallAnimator.start();
         });
     }
+
     private float screenCloseProgress = 0f; // Valore iniziale di progresso
     private void animateScreenClose() {
         this.post(() -> { // Questo assicura che il codice venga eseguito nel UI Thread
@@ -281,6 +278,7 @@ public class GameView extends SurfaceView implements Runnable {
             closeAnimator.start();
         });
     }
+
     public Bitmap getBitmapFromScene() {
         // Crea un Bitmap con le dimensioni della scena
         Bitmap bitmap = Bitmap.createBitmap(screenWidthapp, fieldHeight, Bitmap.Config.ARGB_8888);
