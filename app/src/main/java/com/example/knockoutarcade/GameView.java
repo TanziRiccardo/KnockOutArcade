@@ -36,7 +36,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
+import android.media.MediaPlayer;
 public class GameView extends SurfaceView implements Runnable {
     private Thread gameThread;
     private boolean isPlaying;
@@ -76,8 +76,10 @@ public class GameView extends SurfaceView implements Runnable {
     private int[] rowHeights;
     private int[] columnWidths;
     private static final int TRAIL_LIFETIME = 3000; // Durata di ogni traccia in millisecondi
-    public GameView(Context context, int screenWidth, int screenHeight) {
+    private MainActivity mainActivity;
+    public GameView(Context context, int screenWidth, int screenHeight, MainActivity mainActivity) {
         super(context);
+        this.mainActivity = mainActivity;
         surfaceHolder = getHolder();
         paint = new Paint();
         // Carica lo sfondo e le frecce direzionali
@@ -210,7 +212,27 @@ public class GameView extends SurfaceView implements Runnable {
                 playerBottom >= botTop + tolerance && playerTop + tolerance <= botBottom;
     }
     public void handleCollision(Player player, Bot bot) {
-            Log.d("Collision Info", "ESCE");
+        Log.d("Collision Info", "ESCE");
+        MediaPlayer mediaPlayer = mainActivity.getMediaPlayer(); // Ottieni il MediaPlayer
+        // Verifica che il MediaPlayer sia valido prima di utilizzarlo
+        if (mediaPlayer != null) {
+            try {
+                // Ferma la musica corrente
+                if (mediaPlayer.isPlaying()) {
+                    mediaPlayer.stop();
+                }
+                mediaPlayer.release();
+                mediaPlayer = null;
+
+                // Riproduci un'altra traccia audio per la collisione
+                mediaPlayer = MediaPlayer.create(getContext(), R.raw.knockout_loose); // sostituisci con il nome del tuo file audio
+                mediaPlayer.start();
+            } catch (IllegalStateException e) {
+                e.printStackTrace();  // Gestisci l'eccezione
+            }
+        }
+
+
         // 1. Anima il giocatore verso il basso
         animatePlayerFall(player);
 

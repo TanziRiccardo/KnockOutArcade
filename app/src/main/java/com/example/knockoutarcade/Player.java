@@ -230,7 +230,7 @@ private int currentRow, currentColumn;
         int cellBottom = getCellStartY(gridY + 1);
 
         boolean left = false, right = false, top = false, bottom = false;
-        float tolerance = 10; // Minimum tolerance to avoid floating-point errors
+        float tolerance = 50; // Minimum tolerance to avoid floating-point errors
 
         // Extend the boundary check area by tolerance to prevent misalignment
         float extendedLeft = cellLeft - tolerance;
