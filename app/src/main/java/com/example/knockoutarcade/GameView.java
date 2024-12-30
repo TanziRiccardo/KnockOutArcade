@@ -173,9 +173,9 @@ public class GameView extends SurfaceView implements Runnable {
         for (Bot bot: bots){
             bot.moveBotTowardsTarget();
 
-            if(checkCollision(player, bot)){
+            /*if(checkCollision(player, bot)){
                 handleCollision(player, bot);
-            }
+            }*/
         }
         // Sposta il giocatore al lato opposto quando tocca un bordo
         if (player.getX() < 0) {

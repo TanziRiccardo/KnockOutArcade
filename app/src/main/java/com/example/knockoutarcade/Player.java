@@ -99,6 +99,8 @@ private int currentRow, currentColumn;
     public Bitmap getPlayerBitmap() {
         return spriteSheet;
     }
+    float app1;
+    float app2;
     public void update() {
         // Log per monitorare le velocità
         Log.d("Player Speed", "SpeedX: " + speedX + ", SpeedY: " + speedY);
@@ -137,7 +139,7 @@ private int currentRow, currentColumn;
         frameRect.right = frameRect.left + frameWidth;
         frameRect.bottom = frameRect.top + frameHeight;
         // Controlla se una cella è stata completata
-        checkCellCompletion();
+        checkCellCompletion(x, y);
     }
 
 
@@ -149,6 +151,8 @@ private int currentRow, currentColumn;
         // Controlla se il punto è valido per la mappa percorribile
         int gridX = Math.round(alignedX / GRID_SIZE);
         int gridY = Math.round(alignedY / GRID_SIZE);
+        app1 = alignedX;
+        app2 = alignedY;
         int tolerance = 5;
         if (alignedX < tolerance || alignedY < tolerance || alignedX >= walkableMap.length - tolerance || alignedY >= walkableMap[0].length - tolerance) {
             return;
@@ -178,12 +182,13 @@ private int currentRow, currentColumn;
     private int[] columnWidths = {202, 202, 202, 202, 202};
     private int[] rowHeights = {486, 350, 486, 350, 486};
 
-    private void checkCellCompletion() {
+    private void checkCellCompletion(float x, float y) {
         if (trail.size() < 4){ Log.d("Aggiunta", "trail: " + trail.size()); return;} // Serve almeno un quadrato completo
+        Log.d("messaggiogdgs", "x: " + app1 + "y: " + app2);
         // Trova in quale cella si trova il player
-        int gridX = getColumnIndex(x);
-        int gridY = getRowIndex(y);
-
+        int gridX = getColumnIndex(app1);
+        int gridY = getRowIndex(app2);
+        Log.d("Griglia:", "gridX: "+ gridX + "gridY" + gridY);
         // Salta il controllo se il player è fuori dalla griglia
         if (gridX == -1 || gridY == -1) return;
 
@@ -224,77 +229,81 @@ private int currentRow, currentColumn;
     }
 
     private boolean isCellSurrounded(int gridX, int gridY) {
+        // Calcola i limiti della cella
         int cellLeft = getCellStartX(gridX);
-        int cellRight = getCellStartX(gridX + 1);
+        int cellRight = getCellEndX(gridX);
         int cellTop = getCellStartY(gridY);
-        int cellBottom = getCellStartY(gridY + 1);
+        int cellBottom = getCellEndY(gridY);
 
-        boolean left = false, right = false, top = false, bottom = false;
-        float tolerance = 50; // Minimum tolerance to avoid floating-point errors
+        // Log dei valori calcolati
+        Log.d("GridInfo", "Cell boundaries - Left: " + cellLeft + ", Right: " + cellRight +
+                ", Top: " + cellTop + ", Bottom: " + cellBottom);
 
-        // Extend the boundary check area by tolerance to prevent misalignment
+        // Aggiungi tolleranza ai confini
+        float tolerance = 50;  // Aggiungi tolleranza per evitare errori di floating point
+
+        // Estendi i confini della cella con la tolleranza
         float extendedLeft = cellLeft - tolerance;
         float extendedRight = cellRight + tolerance;
         float extendedTop = cellTop - tolerance;
         float extendedBottom = cellBottom + tolerance;
 
-        // Check if any point in the trail is near the extended boundaries
+        boolean left = false, right = false, top = false, bottom = false;
+
+        // Controlla se il trail tocca i confini estesi
         for (float[] point : trail) {
             float px = point[0];
             float py = point[1];
 
-            // Check if the point touches the left edge of the cell
             if (px >= extendedLeft && px <= extendedLeft + tolerance && py >= cellTop && py <= cellBottom) {
-                Log.d("questo111", "Point: (" + px + ", " + py + "), Checking left edge: extendedLeft = " + extendedLeft + ", tolerance = " + tolerance);
+                Log.d("GridInfogf", "Cell boundaries QUI1");
                 left = true;
             }
-
-            // Check if the point touches the right edge of the cell
-            Log.d("questo222", "Point: (" + px + ", " + py + "), Checking right edge: extendedBottom = " + extendedRight + ", tolerance = " + tolerance+ ", cellTOp" + cellTop +  ", cellBottom" + cellBottom);
             if (px >= extendedRight - tolerance && px <= extendedRight && py >= cellTop && py <= cellBottom) {
-                Log.d("questo222DENTRO", "Point: (" + px + ", " + py + "), Checking right edge: extendedBottom = " + extendedRight + ", tolerance = " + tolerance);
+                Log.d("GridInfogf", "Cell boundaries QUI2");
                 right = true;
             }
-
-            // Check if the point touches the top edge of the cell
-            Log.d("questo333", "Point: (" + px + ", " + py + "), Checking top edge: extendedTop = " + extendedTop + ", tolerance = " + tolerance + "cellLeft" + cellLeft + "cellRight" +  cellRight);
             if (py >= extendedTop && py <= extendedTop + tolerance && px >= cellLeft && px <= cellRight) {
-                Log.d("questo333DENTRO", "Point: (" + px + ", " + py + "), Checking top edge: extendedTop = " + extendedTop + ", tolerance = " + tolerance);
+                Log.d("GridInfogf", "Cell boundaries QUI3");
                 top = true;
-            }
-
-            // Check if the point touches the bottom edge of the cell
+            } Log.d("GridInfo", "Cell boundaries - Left: " + cellLeft + ", Right: " + cellRight +
+                    ", extended bottom: " + extendedBottom + ", py: " + py + " , px" + px);
             if (py >= extendedBottom - tolerance && py <= extendedBottom && px >= cellLeft && px <= cellRight) {
-                Log.d("questo444", "Point: (" + px + ", " + py + "), Checking bottom edge: extendedBottom = " + extendedBottom + ", tolerance = " + tolerance);
+                Log.d("GridInfogf", "Cell boundaries QUI4");
                 bottom = true;
             }
 
-
-            // If all boundaries are touched, return true
+            // Se tutti i confini sono toccati, la cella è circondata
             if (left && right && top && bottom) {
                 return true;
             }
         }
 
-        return false;
+        return false;  // La cella non è circondata
     }
 
-
-
     private int getCellStartX(int columnIndex) {
-        int currentX = 30; // Inizio della griglia
-        for (int i = 0; i < columnIndex && i < columnWidths.length; i++) {
-            currentX += columnWidths[i];
+        int currentX = 30; // Inizio della griglia (con il bordo iniziale)
+        for (int i = 0; i < columnIndex; i++) {
+            currentX += columnWidths[i]; // Somma la larghezza delle colonne precedenti
         }
         return currentX;
     }
 
     private int getCellStartY(int rowIndex) {
-        int currentY = 30; // Inizio della griglia
-        for (int i = 0; i < rowIndex && i < rowHeights.length; i++) {
-            currentY += rowHeights[i];
+        int currentY = 30; // Inizio della griglia (con il bordo iniziale)
+        for (int i = 0; i < rowIndex; i++) {
+            currentY += rowHeights[i]; // Somma l'altezza delle righe precedenti
         }
         return currentY;
+    }
+
+    private int getCellEndX(int columnIndex) {
+        return getCellStartX(columnIndex + 1); // Posizione del bordo destro della cella
+    }
+
+    private int getCellEndY(int rowIndex) {
+        return getCellStartY(rowIndex + 1); // Posizione del bordo inferiore della cella
     }
 
 
