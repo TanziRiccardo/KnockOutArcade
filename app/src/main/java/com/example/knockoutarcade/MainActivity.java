@@ -2,13 +2,20 @@ package com.example.knockoutarcade;
 
 import android.os.Bundle;
 import android.util.DisplayMetrics;
+import android.view.View;
 import android.widget.Toast;
 import android.media.MediaPlayer;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import android.content.res.Resources;
+import android.util.TypedValue;
 
 public class MainActivity extends AppCompatActivity {
     private GameView gameView;
     private MediaPlayer mediaPlayer;
+    private int statusBarHeight;
+    private int navigationBarHeight;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -30,7 +37,14 @@ public class MainActivity extends AppCompatActivity {
     public MediaPlayer getMediaPlayer() {
         return mediaPlayer;
     }
-
+    public int getStatusBarHeight() {
+        int result = 0;
+        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (resourceId > 0) {
+            result = getResources().getDimensionPixelSize(resourceId);
+        }
+        return result;
+    }
     @Override
     protected void onResume() {
         super.onResume();

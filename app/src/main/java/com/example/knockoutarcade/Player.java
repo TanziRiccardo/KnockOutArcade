@@ -1,11 +1,10 @@
 package com.example.knockoutarcade;
 
+
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
 import android.graphics.Rect;
 import android.util.Log;
 
@@ -36,7 +35,7 @@ public class Player {
     private float previousX;
     private float previousY;
     private int screenWidth, screenHeight;  // Dimensioni dello schermo
-private int currentRow, currentColumn;
+    private int currentRow, currentColumn;
     // Numero di righe e colonne (modifica questi valori in base alla tua configurazione dello spritesheet)
     private static final int COLUMNS = 2;  // Numero di colonne nello spritesheet
     private static final int ROWS = 3;  // Numero di righe nello spritesheet
@@ -44,7 +43,6 @@ private int currentRow, currentColumn;
     private Direction currentDirection = Direction.NONE;
     private Direction requestedDirection = Direction.NONE; // La direzione richiesta dal giocatore
     private boolean[][] walkableMap;
-    int speed = 2; // Velocità del giocatore
     private List<Intersection> targets = new ArrayList<>();
     private int currentTargetIndex = 0;
     private List<float[]> trail = new ArrayList<>(); // Traccia del percorso
@@ -55,7 +53,11 @@ private int currentRow, currentColumn;
     private Set<String> uniqueTrailPoints = new HashSet<>();
     private static final int TRAIL_SIZE = 20; // Dimensione del trail
     private int counterPoints = 0;
-    public Player(Context context, int resourceId, int screenWidth, int screenHeight, int totalFrames, int x, int y, boolean[][] walkableMap) {
+    private MainActivity mainActivity;
+    private Trail traill;
+    public Player(Context context, int resourceId, int screenWidth, int screenHeight, int totalFrames, int x, int y, boolean[][] walkableMap, MainActivity mainActivity) {
+        this.mainActivity = mainActivity;
+        traill = new Trail(x, y, previousX, previousY, walkableMap, mainActivity, this);
         this.spriteSheet = BitmapFactory.decodeResource(context.getResources(), resourceId);
         this.screenWidth = screenWidth;
         this.screenHeight = screenHeight;
@@ -91,7 +93,15 @@ private int currentRow, currentColumn;
         targets.add(new Intersection(541, 1856));  // Secondo incrocio
         targets.add(new Intersection(811, 1856));  // Terzo incrocio
     }
-
+    public float getPreviousX(){
+        return previousX;
+    }
+    public float getPreviousY(){
+        return previousY;
+    }
+    public boolean[][] getWalkableMap(){
+        return walkableMap;
+    }
     public int getCounterPoints() {
         return counterPoints;
     }
@@ -118,7 +128,7 @@ private int currentRow, currentColumn;
         // Aggiungi la posizione corrente alla traccia se il player si è mosso
         long currentTime = System.currentTimeMillis();
         if ((previousX != x || previousY != y) && currentTime > lastTrailPointTime + TRAIL_INTERVAL) {
-            addTrailPoint();
+            traill.addTrailPoint();
             lastTrailPointTime = currentTime;
         }
 
@@ -139,269 +149,13 @@ private int currentRow, currentColumn;
         frameRect.right = frameRect.left + frameWidth;
         frameRect.bottom = frameRect.top + frameHeight;
         // Controlla se una cella è stata completata
-        checkCellCompletion(x, y);
+        traill.checkCellCompletion(x, y);
     }
 
-
-    private void addTrailPoint() {
-        // Allinea il trail al centro delle linee della griglia
-        float alignedX = ((x + frameWidth /2) / GRID_SIZE) * GRID_SIZE;
-        float alignedY = ((y + frameHeight/2) / GRID_SIZE) * GRID_SIZE;
-
-        // Controlla se il punto è valido per la mappa percorribile
-        int gridX = Math.round(alignedX / GRID_SIZE);
-        int gridY = Math.round(alignedY / GRID_SIZE);
-        app1 = alignedX;
-        app2 = alignedY;
-        int tolerance = 5;
-        if (alignedX < tolerance || alignedY < tolerance || alignedX >= walkableMap.length - tolerance || alignedY >= walkableMap[0].length - tolerance) {
-            return;
-        }
-
-        // Verifica se il punto è già presente nel trail
-        for (float[] existingPoint : trail) {
-            if (Math.abs(existingPoint[0] - alignedX) < GRID_SIZE / 2 && Math.abs(existingPoint[1] - alignedY) < GRID_SIZE / 2) {
-                return; // Evita di aggiungere punti già presenti
-            }
-        }
-
-        // Crea una chiave unica per posizione
-        String pointKey = gridX + "," + gridY;
-
-        // Aggiungi al trail solo se il punto è nuovo
-        if (!uniqueTrailPoints.contains(pointKey)) {
-            trail.add(new float[]{alignedX, alignedY});
-            uniqueTrailPoints.add(pointKey);
-            Log.d("Trail", "Aggiunto punto: " + pointKey);
-        }
-
-        // Aggiorna la posizione precedente
-        previousX = alignedX;
-        previousY = alignedY;
-    }
-    private int[] columnWidths = {202, 202, 202, 202, 202};
-    private int[] rowHeights = {486, 350, 486, 350, 486};
-
-    private void checkCellCompletion(float x, float y) {
-        if (trail.size() < 4){ Log.d("Aggiunta", "trail: " + trail.size()); return;} // Serve almeno un quadrato completo
-        Log.d("messaggiogdgs", "x: " + app1 + "y: " + app2);
-        // Trova in quale cella si trova il player
-        int gridX = getColumnIndex(app1);
-        int gridY = getRowIndex(app2);
-        Log.d("Griglia:", "gridX: "+ gridX + "gridY" + gridY);
-        // Salta il controllo se il player è fuori dalla griglia
-        if (gridX == -1 || gridY == -1) return;
-
-        String cellKey = gridX + "," + gridY;
-
-        // Controlla se la cella è già completata
-        if (completedCells.contains(cellKey)) return;
-
-        // Verifica se i punti del trail circondano la cella corrente
-        boolean closed = isCellSurrounded(gridX, gridY);
-
-        if (closed) {
-            completedCells.add(cellKey);
-            Log.d("Cell Completion", "Cella completata: " + cellKey);
-        }
-    }
-
-    private int getColumnIndex(float posX) {
-        int currentX = 30; // Inizio della griglia
-        for (int i = 0; i < columnWidths.length; i++) {
-            if (posX >= currentX && posX < currentX + columnWidths[i]) {
-                return i;
-            }
-            currentX += columnWidths[i];
-        }
-        return -1; // Fuori dai confini
-    }
-
-    private int getRowIndex(float posY) {
-        int currentY = 30; // Inizio della griglia
-        for (int i = 0; i < rowHeights.length; i++) {
-            if (posY >= currentY && posY < currentY + rowHeights[i]) {
-                return i;
-            }
-            currentY += rowHeights[i];
-        }
-        return -1; // Fuori dai confini
-    }
-
-    private boolean isCellSurrounded(int gridX, int gridY) {
-        // Calcola i limiti della cella
-        int cellLeft = getCellStartX(gridX);
-        int cellRight = getCellEndX(gridX);
-        int cellTop = getCellStartY(gridY);
-        int cellBottom = getCellEndY(gridY);
-
-        // Log dei valori calcolati
-        Log.d("GridInfo", "Cell boundaries - Left: " + cellLeft + ", Right: " + cellRight +
-                ", Top: " + cellTop + ", Bottom: " + cellBottom);
-
-        // Aggiungi tolleranza ai confini
-        float tolerance = 50;  // Aggiungi tolleranza per evitare errori di floating point
-
-        // Estendi i confini della cella con la tolleranza
-        float extendedLeft = cellLeft - tolerance;
-        float extendedRight = cellRight + tolerance;
-        float extendedTop = cellTop - tolerance;
-        float extendedBottom = cellBottom + tolerance;
-
-        boolean left = false, right = false, top = false, bottom = false;
-
-        // Controlla se il trail tocca i confini estesi
-        for (float[] point : trail) {
-            float px = point[0];
-            float py = point[1];
-
-            if (px >= extendedLeft && px <= extendedLeft + tolerance && py >= cellTop && py <= cellBottom) {
-                Log.d("GridInfogf", "Cell boundaries QUI1");
-                left = true;
-            }
-            if (px >= extendedRight - tolerance && px <= extendedRight && py >= cellTop && py <= cellBottom) {
-                Log.d("GridInfogf", "Cell boundaries QUI2");
-                right = true;
-            }
-            if (py >= extendedTop && py <= extendedTop + tolerance && px >= cellLeft && px <= cellRight) {
-                Log.d("GridInfogf", "Cell boundaries QUI3");
-                top = true;
-            } Log.d("GridInfo", "Cell boundaries - Left: " + cellLeft + ", Right: " + cellRight +
-                    ", extended bottom: " + extendedBottom + ", py: " + py + " , px" + px);
-            if (py >= extendedBottom - tolerance && py <= extendedBottom && px >= cellLeft && px <= cellRight) {
-                Log.d("GridInfogf", "Cell boundaries QUI4");
-                bottom = true;
-            }
-
-            // Se tutti i confini sono toccati, la cella è circondata
-            if (left && right && top && bottom) {
-                return true;
-            }
-        }
-
-        return false;  // La cella non è circondata
-    }
-
-    private int getCellStartX(int columnIndex) {
-        int currentX = 30; // Inizio della griglia (con il bordo iniziale)
-        for (int i = 0; i < columnIndex; i++) {
-            currentX += columnWidths[i]; // Somma la larghezza delle colonne precedenti
-        }
-        return currentX;
-    }
-
-    private int getCellStartY(int rowIndex) {
-        int currentY = 30; // Inizio della griglia (con il bordo iniziale)
-        for (int i = 0; i < rowIndex; i++) {
-            currentY += rowHeights[i]; // Somma l'altezza delle righe precedenti
-        }
-        return currentY;
-    }
-
-    private int getCellEndX(int columnIndex) {
-        return getCellStartX(columnIndex + 1); // Posizione del bordo destro della cella
-    }
-
-    private int getCellEndY(int rowIndex) {
-        return getCellStartY(rowIndex + 1); // Posizione del bordo inferiore della cella
-    }
 
 
     public void draw(Canvas canvas) {
-        // Disegna il percorso
-        Paint trailPaint = new Paint();
-        trailPaint.setColor(Color.YELLOW);
-        trailPaint.setStyle(Paint.Style.FILL);
-
-        // Variabili per calcolare la direzione del movimento
-        float[] previousPoint = null;
-
-        for (float[] point : trail) {
-            float trailWidth, trailHeight;
-
-            if (previousPoint != null) {
-                float dx = point[0] - previousPoint[0];
-                float dy = point[1] - previousPoint[1];
-
-                // Calcola direzione del movimento
-                if (Math.abs(dx) > Math.abs(dy)) {
-                    // Movimento orizzontale
-                    trailWidth = TRAIL_SIZE;
-                    trailHeight = TRAIL_SIZE;
-                } else {
-                    // Movimento verticale
-                    trailWidth = TRAIL_SIZE;
-                    trailHeight = TRAIL_SIZE;
-                }
-            } else {
-                // Default dimensions (prima iterazione)
-                trailWidth = TRAIL_SIZE;
-                trailHeight = TRAIL_SIZE;
-            }
-
-            // Disegna il rettangolo del trail
-            canvas.drawRect(
-                    point[0] - trailWidth / 2,
-                    point[1] - trailHeight / 2,
-                    point[0] + trailWidth / 2,
-                    point[1] + trailHeight / 2,
-                    trailPaint
-            );
-
-            // Aggiorna il punto precedente
-            previousPoint = point;
-        }
-
-
-        // Disegna le celle completate
-        Paint cellPaint = new Paint();
-        cellPaint.setColor(Color.YELLOW);
-        cellPaint.setStyle(Paint.Style.FILL);
-        cellPaint.setAlpha(128);
-
-        Paint textPaint = new Paint();
-        textPaint.setColor(Color.YELLOW);
-        textPaint.setStyle(Paint.Style.FILL);
-        textPaint.setTextSize(40); // Imposta la dimensione del testo
-        textPaint.setTextAlign(Paint.Align.CENTER); // Allinea il testo al centro
-
-        for (String cellKey : completedCells) {
-            String[] parts = cellKey.split(",");
-            int gridX = Integer.parseInt(parts[0]);
-            int gridY = Integer.parseInt(parts[1]);
-
-            // Ottieni le coordinate iniziali della cella
-            int cellStartX = getCellStartX(gridX);
-            int cellStartY = getCellStartY(gridY);
-
-            // Ottieni la larghezza e l'altezza della cella
-            int cellWidth = columnWidths[gridX];
-            int cellHeight = rowHeights[gridY];
-
-            // Calcola il margine per non coprire le linee della griglia (ad esempio, 5 pixel per lato)
-            int margin = 7;
-
-            // Disegna il rettangolo ridotto
-            canvas.drawRect(
-                    cellStartX + margin,           // Sposta verso destra
-                    cellStartY + margin,           // Sposta verso il basso
-                    cellStartX + cellWidth - margin, // Riduci larghezza
-                    cellStartY + cellHeight - margin, // Riduci altezza
-                    cellPaint
-            );
-            // Calcola il centro del rettangolo
-            float centerX = cellStartX + cellWidth / 2.0f;
-            float centerY = cellStartY + cellHeight / 2.0f;
-
-            // Calcola l'offset verticale per centrare il testo rispetto alla baseline
-            Paint.FontMetrics fontMetrics = textPaint.getFontMetrics();
-            float textCenterY = centerY - (fontMetrics.ascent + fontMetrics.descent) / 2;
-
-            // Disegna il testo al centro
-            canvas.drawText("+60", centerX, textCenterY, textPaint);
-            counterPoints += 60;
-        }
-
+        traill.draw(canvas);
         // Estrai il fotogramma corrente dallo sprite sheet
         Bitmap currentSprite = Bitmap.createBitmap(spriteSheet, frameRect.left, frameRect.top, frameWidth, frameHeight);
 

@@ -77,6 +77,7 @@ public class GameView extends SurfaceView implements Runnable {
     private int[] columnWidths;
     private static final int TRAIL_LIFETIME = 3000; // Durata di ogni traccia in millisecondi
     private MainActivity mainActivity;
+    private Trail traill;
     public GameView(Context context, int screenWidth, int screenHeight, MainActivity mainActivity) {
         super(context);
         this.mainActivity = mainActivity;
@@ -104,12 +105,12 @@ public class GameView extends SurfaceView implements Runnable {
         screenWidthapp = screenWidth;
         trails = new ArrayList<>();
         // Definisci larghezze delle colonne (valori personalizzabili)
-        columnWidths = new int[]{202, 202, 202, 202, 202};
+        columnWidths = new int[]{193, 193, 193, 193, 193};
         // Definisci altezze delle righe (valori personalizzabili)
-        rowHeights = new int[]{486, 350, 486, 350, 486};
+        rowHeights = new int[]{470, 350, 470, 350, 470};
         Bitmap sceneBitmap = getBitmapFromScene();
         initializeWalkableMap(sceneBitmap);
-        player = new Player(context, R.drawable.player_bross, screenWidth, screenHeight, 6, fieldWidth / 2, fieldHeight - 200, walkableMap);
+        player = new Player(context, R.drawable.player_bross, screenWidth, screenHeight, 6, fieldWidth / 2, fieldHeight - 200, walkableMap, mainActivity);
         initializePlayerPosition();
         bots = new ArrayList<>(); // Inizializza la lista
         initializeBots(); // Aggiungi bot alla lista
@@ -121,7 +122,7 @@ public class GameView extends SurfaceView implements Runnable {
             bots = new ArrayList<>();
         // Calcolare la posizione del primo bot tra la prima e la seconda riga
         int firstBotY = rowHeights[0] + (rowHeights[1] - rowHeights[0]) / 2; // Posizione tra prima e seconda riga
-        int firstBotX = columnWidths[1] + 30; // Colonna tra la prima e la seconda colonna
+        int firstBotX = columnWidths[1] + 55; // Colonna tra la prima e la seconda colonna
 
         // Calcolare la posizione del secondo bot tra l'ultima e la penultima riga
         int secondBotY = 600; // Posizione tra l'ultima e la penultima riga
@@ -462,9 +463,6 @@ public class GameView extends SurfaceView implements Runnable {
         return true;
     }
 
-
-
-
     // Funzione per verificare se il tocco è dentro un'area specifica
     private boolean isTouchInsideArea(float touchX, float touchY, float x, float y, float width, float height) {
         return touchX >= x && touchX <= (x + width) && touchY >= y && touchY <= (y + height);
@@ -573,9 +571,10 @@ public class GameView extends SurfaceView implements Runnable {
         Bitmap borderBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.borderbitmap);
 
         int borderWidth = 30; // Spessore del bordo
+        int marginOffset = borderWidth / 2; // Compensazione per evitare sovrapposizioni
 
         // Crea un Bitmap scalato in base alla larghezza del bordo
-        int scaledSize = borderWidth; // Il bordo dovrebbe avere larghezza uguale al quadrato
+        int scaledSize = borderWidth;
         Bitmap scaledBitmap = Bitmap.createScaledBitmap(borderBitmap, scaledSize, scaledSize, false);
 
         // Configura il BitmapShader con TileMode.REPEAT
@@ -584,17 +583,11 @@ public class GameView extends SurfaceView implements Runnable {
         Paint borderPaint = new Paint();
         borderPaint.setShader(borderShader);
 
-        // Disegna il bordo superiore
-        canvas.drawRect(0, 0, screenWidthapp, borderWidth, borderPaint);
-
-        // Disegna il bordo inferiore
-        canvas.drawRect(0, fieldHeight - borderWidth, screenWidthapp, fieldHeight, borderPaint);
-
-        // Disegna il bordo sinistro
-        canvas.drawRect(0, 0, borderWidth, fieldHeight, borderPaint);
-
-        // Disegna il bordo destro
-        canvas.drawRect(screenWidthapp - borderWidth, 0, screenWidthapp, fieldHeight, borderPaint);
+        // Disegna i bordi
+        canvas.drawRect(marginOffset, marginOffset, screenWidthapp - marginOffset, marginOffset + borderWidth, borderPaint); // Superiore
+        canvas.drawRect(marginOffset, fieldHeight - marginOffset - borderWidth, screenWidthapp - marginOffset, fieldHeight - marginOffset, borderPaint); // Inferiore
+        canvas.drawRect(marginOffset, marginOffset, marginOffset + borderWidth, fieldHeight - marginOffset, borderPaint); // Sinistra
+        canvas.drawRect(screenWidthapp - marginOffset - borderWidth, marginOffset, screenWidthapp - marginOffset, fieldHeight - marginOffset, borderPaint); // Destra
     }
     private void drawDirectionPad(Canvas canvas) {
 
@@ -610,29 +603,32 @@ public class GameView extends SurfaceView implements Runnable {
         gridPaint.setStrokeWidth(25);
 
         int borderWidth = 30; // Spessore del bordo decorativo
+        int marginOffset = 25;
 
         // Definisci larghezze delle colonne (valori personalizzabili)
-        int[] columnWidths = {202, 202, 202, 202, 202};
+        int[] columnWidths = {193, 193, 193, 193, 193};
         // Definisci altezze delle righe (valori personalizzabili)
-        int[] rowHeights = {486, 350, 486, 350, 486};
+        int[] rowHeights = {470, 350, 470, 350, 470};
 
         // Calcola la posizione delle linee verticali tenendo conto del bordo
-        int currentX = borderWidth;
+        int currentX = borderWidth + marginOffset;
         for (int i = 0; i <= columnWidths.length; i++) {
-            canvas.drawLine(currentX, borderWidth, currentX, fieldHeight - borderWidth, gridPaint); // Linee verticali
+            canvas.drawLine(currentX, borderWidth + marginOffset, currentX, fieldHeight - borderWidth - marginOffset, gridPaint); // Linee verticali
             if (i < columnWidths.length) {
                 currentX += columnWidths[i];
             }
         }
 
         // Calcola la posizione delle linee orizzontali tenendo conto del bordo
-        int currentY = borderWidth;
+        int currentY = borderWidth + marginOffset;
         for (int j = 0; j <= rowHeights.length; j++) {
-            canvas.drawLine(borderWidth, currentY, screenWidthapp - borderWidth, currentY, gridPaint); // Linee orizzontali
+            canvas.drawLine(borderWidth + marginOffset, currentY, screenWidthapp - borderWidth - marginOffset, currentY, gridPaint); // Linee orizzontali
             if (j < rowHeights.length) {
                 currentY += rowHeights[j];
             }
         }
+
+        Log.d("statusBarENa", "STATUS" + mainActivity.getStatusBarHeight() );
     }
     private void updateBackgroundPosition() {
         if (backgroundSpeed != 0) {
