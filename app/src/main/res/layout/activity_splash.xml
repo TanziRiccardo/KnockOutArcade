@@ -27,7 +27,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="105dp"
         android:layout_marginTop="90dp"
-        android:fontFamily="@font/creepsterregular"
+        android:fontFamily="@font/atlantistextbold"
         android:text="C H A R A C T E R S"
         android:textColor="#F4F000"
         android:textSize="30sp"
@@ -107,7 +107,7 @@
                 android:id="@+id/bot_image_view_3"
                 android:layout_width="50dp"
                 android:layout_height="70dp"
-                android:layout_marginStart="50dp"
+                android:layout_marginStart="56dp"
                 android:layout_marginEnd="55dp"
                 android:src="@drawable/fire_block"
                 android:visibility="gone" />

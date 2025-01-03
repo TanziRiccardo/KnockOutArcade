@@ -12,7 +12,7 @@
         android:text="G A M E   O V E R"
         android:textColor="#FFFF00"
         android:textSize="48sp"
-        android:fontFamily="@font/creepsterregular"
+        android:fontFamily="@font/atlantistextbold"
         android:textStyle=""
         android:layout_centerHorizontal="true"
         android:layout_marginTop="95dp" />
@@ -24,6 +24,7 @@
         android:layout_below="@id/gameOverText"
         android:layout_marginTop="35dp"
         android:layout_marginBottom="10dp"
+        android:fontFamily="@font/atlantistextbold"
         android:divider="@color/black"
         android:dividerHeight="1dp" />
 
@@ -37,7 +38,8 @@
         android:layout_marginBottom="200dp"
         android:backgroundTint="@color/black"
         android:textColor="@color/white"
-        android:fontFamily="@font/creepsterregular"
+        android:fontFamily="@font/atlantistextbold"
+        android:textSize="30sp"
         android:text="N u o v a   P a r t i t a"
         android:visibility="visible" />
     <!-- Copyright -->

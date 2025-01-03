@@ -52,7 +52,6 @@ public class Player {
     private static final int GRID_SIZE = 20; // Dimensione della griglia
     private Set<String> uniqueTrailPoints = new HashSet<>();
     private static final int TRAIL_SIZE = 20; // Dimensione del trail
-    private int counterPoints = 0;
     private MainActivity mainActivity;
     private Trail traill;
     public Player(Context context, int resourceId, int screenWidth, int screenHeight, int totalFrames, int x, int y, boolean[][] walkableMap, MainActivity mainActivity) {
@@ -101,9 +100,6 @@ public class Player {
     }
     public boolean[][] getWalkableMap(){
         return walkableMap;
-    }
-    public int getCounterPoints() {
-        return counterPoints;
     }
 
     public Bitmap getPlayerBitmap() {

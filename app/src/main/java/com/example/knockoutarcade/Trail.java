@@ -1,10 +1,8 @@
 package com.example.knockoutarcade;
 
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Point;
 import android.util.Log;
 
 import java.util.ArrayList;
@@ -300,17 +298,6 @@ public class Trail {
                     cellPaint
             );
 
-            Log.d("DebugInfo", "cellStartX: " + cellStartX +
-                    ", cellStartY: " + cellStartY +
-                    ", cellWidth: " + cellWidth +
-                    ", cellHeight: " + cellHeight +
-                    ", margin: " + margin);
-
-            Log.d("DebugInfo", "Calcoli effettuati - " +
-                    "left: " + (cellStartX + margin) +
-                    ", top: " + (cellStartY + margin) +
-                    ", right: " + (cellStartX + cellWidth - margin) +
-                    ", bottom: " + (cellStartY + cellHeight - margin));
             // Calcola il centro del rettangolo
             float centerX = cellStartX + cellWidth / 2.0f;
             float centerY = (cellStartY - mainActivity.getStatusBarHeight()) + cellHeight / 2.0f;
@@ -321,9 +308,17 @@ public class Trail {
 
             // Disegna il testo al centro
             canvas.drawText("+60", centerX, textCenterY, textPaint);
-            counterPoints += 60;
+            counter();
 
         }
+    }
+
+    private void counter(){
+        counterPoints += 60;
+    }
+
+    public int getCounterPoints(){
+        return counterPoints;
     }
 
 
