@@ -185,41 +185,75 @@ public class Bot {
         return false;
     }
     public void moveBotTowardsTarget() {
-        // Allineamento alla griglia (solo se necessario)
+        // Controlla se è allineato alla griglia
         if (alignToGrid()) {
-            return; // Finché non è allineato, non calcola una nuova direzione
+            return; // Allineamento necessario
         }
 
         // Calcola la direzione se allineato a un incrocio
         if (isAlignedWithIntersection()) {
-            calculateAndSetDirection();
+            if (isOtherBotBlocking(botX, botY)) {
+                // Cerca un'alternativa al primo incrocio disponibile
+                findAlternativeDirection();
+            } else {
+                calculateAndSetDirection();
+            }
         }
 
         // Muoviti nella direzione corrente
         if (!moveInCurrentDirection()) {
             calculateAndSetDirection();
         }
+    }
+    private void findAlternativeDirection() {
+        // Ordina le direzioni disponibili per priorità
+        List<Direction> possibleDirections = Arrays.asList(Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT);
 
-        // Rallenta o fermati se un altro bot sta bloccando la strada
-        if (isOtherBotBlocking(x, y)) {
-            stopBot(); // Ferma il bot o rallenta
-        } else {
-            // Prosegui nel movimento verso il target
-            if (!moveInCurrentDirection()) {
-                calculateAndSetDirection();
+        // Prova ogni direzione fino a trovare una percorribile
+        for (Direction direction : possibleDirections) {
+            float nextX = x, nextY = y;
+
+            switch (direction) {
+                case UP:
+                    nextY -= 20;
+                    break;
+                case DOWN:
+                    nextY += 20;
+                    break;
+                case LEFT:
+                    nextX -= 20;
+                    break;
+                case RIGHT:
+                    nextX += 20;
+                    break;
+            }
+
+            if (canMoveTo(nextX, nextY) && !isOtherBotBlocking(nextX, nextY)) {
+                currentDirection = direction;
+                return;
             }
         }
-        // Gestione del movimento dei bot ai bordi (ricomparire dal lato opposto)
-        if (x < 0) {
-            x = screenWidth - getWidth()/8; // Compara al lato destro
-        } else if (x + getWidth()/8 > screenWidth) {
-            x = 0; // Compara al lato sinistro
-        }
 
-        if (y < 0) {
-            y = screenHeight - getHeight()/2; // Compara al lato inferiore
-        } else if (y + getHeight()/2 > screenHeight) {
-            y = 0; // Compara al lato superiore
+        // Se nessuna direzione è percorribile, torna indietro
+        reverseDirection();
+    }
+
+    private void reverseDirection() {
+        switch (currentDirection) {
+            case UP:
+                currentDirection = Direction.DOWN;
+                break;
+            case DOWN:
+                currentDirection = Direction.UP;
+                break;
+            case LEFT:
+                currentDirection = Direction.RIGHT;
+                break;
+            case RIGHT:
+                currentDirection = Direction.LEFT;
+                break;
+            case NONE:
+                break; // Rimani fermo
         }
     }
     private void stopBot() {

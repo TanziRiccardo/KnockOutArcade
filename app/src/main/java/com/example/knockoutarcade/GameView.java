@@ -170,15 +170,15 @@ public class GameView extends SurfaceView implements Runnable {
         player.update(); // Aggiorna animazioni o stato del giocatore
 
 
-        if(traill.getCounterPoints() == 1500){
+        /*if(traill.getCounterPoints() == 1500){
             showWinScreen();
-        }
+        }*/
         for (Bot bot: bots){
             bot.moveBotTowardsTarget();
 
-            if(checkCollision(player, bot)){
+            /*if(checkCollision(player, bot)){
                 handleCollision(player, bot);
-            }
+            }*/
         }
         // Sposta il giocatore al lato opposto quando tocca un bordo
         if (player.getX() < 0) {

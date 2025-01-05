@@ -25,7 +25,7 @@
         android:id="@+id/characters"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="105dp"
+        android:layout_marginStart="88dp"
         android:layout_marginTop="90dp"
         android:fontFamily="@font/atlantistextbold"
         android:text="C H A R A C T E R S"

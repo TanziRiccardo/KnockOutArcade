@@ -153,7 +153,7 @@ public class SplashActivity extends AppCompatActivity {
                     textView.setText(currentText.toString());
 
                     // Usa un contesto valido, come textView.getContext()
-                    Typeface creepsterFont = ResourcesCompat.getFont(textView.getContext(), R.font.creepsterregular);
+                    Typeface creepsterFont = ResourcesCompat.getFont(textView.getContext(), R.font.atlantistextbold);
                     textView.setTypeface(creepsterFont);
 
 

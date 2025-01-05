@@ -13,7 +13,7 @@ import java.util.Set;
 public class Trail {
     private List<float[]> trail = new ArrayList<>(); // Traccia del percorso
     private Set<String> completedCells = new HashSet<>(); // Celle completate
-    private static final int GRID_SIZE = 20; // Dimensione della griglia
+    private static final int GRID_SIZE = 25; // Dimensione della griglia
     private Set<String> uniqueTrailPoints = new HashSet<>();
     private static final int TRAIL_SIZE = 20; // Dimensione del trail
     private int counterPoints = 0;
@@ -33,44 +33,50 @@ public class Trail {
         this.player = player;
     }
     public void addTrailPoint() {
-        x = player.getX();
-        y = player.getY();
-        previousY = player.getPreviousY();
-        previousX = player.getPreviousX();
-        walkableMap = player.getWalkableMap();
-        // Allinea il trail al centro delle linee della griglia
-        float alignedX = ((x + player.getWidth() /2) / GRID_SIZE) * GRID_SIZE;
-        float alignedY = ((y + player.getHeight()/2) / GRID_SIZE) * GRID_SIZE;
+        // Ottieni la posizione attuale del giocatore
+        float x = player.getX();
+        float y = player.getY();
+        float playerWidth = player.getWidth();
+        float playerHeight = player.getHeight();
 
-        // Controlla se il punto è valido per la mappa percorribile
+        // Ottieni la mappa percorribile
+        boolean[][] walkableMap = player.getWalkableMap();
+        int mapWidth = walkableMap.length;
+        int mapHeight = walkableMap[0].length;
+
+        // Calcola le coordinate centrate sulla griglia
+        float alignedX = ((x + player.getWidth()/(2)) / GRID_SIZE) * GRID_SIZE;
+        float alignedY = ((y + player.getHeight()/(2)) / GRID_SIZE) * GRID_SIZE;
         int gridX = Math.round(alignedX / GRID_SIZE);
         int gridY = Math.round(alignedY / GRID_SIZE);
-        int tolerance = 5;
-        if (alignedX < tolerance || alignedY < tolerance || alignedX >= walkableMap.length - tolerance || alignedY >= walkableMap[0].length - tolerance) {
+        Log.d("Grigliatore", "GridX: " + alignedX + " GridY: " + alignedY );
+        // Controlla se le coordinate sono all'interno dei limiti della mappa
+        if (gridX < 0 || gridY < 0 || gridX >= mapWidth || gridY >= mapHeight) {
             return;
         }
 
-        // Verifica se il punto è già presente nel trail
+        // Controlla se il punto è percorribile nella mappa
+        if (!walkableMap[(int) alignedX][(int) alignedY]) {
+            return; // Punto non valido
+        }
+
+
+        // Evita duplicati nel trail
         for (float[] existingPoint : trail) {
             if (Math.abs(existingPoint[0] - alignedX) < GRID_SIZE / 2 && Math.abs(existingPoint[1] - alignedY) < GRID_SIZE / 2) {
-                return; // Evita di aggiungere punti già presenti
+                return; // Punto già presente
             }
         }
 
-        // Crea una chiave unica per posizione
+        // Aggiungi il punto al trail
         String pointKey = gridX + "," + gridY;
-
-        // Aggiungi al trail solo se il punto è nuovo
         if (!uniqueTrailPoints.contains(pointKey)) {
             trail.add(new float[]{alignedX, alignedY});
             uniqueTrailPoints.add(pointKey);
             Log.d("Trail", "Aggiunto punto: " + pointKey);
         }
-
-        // Aggiorna la posizione precedente
-        previousX = alignedX;
-        previousY = alignedY;
     }
+
     private int[] columnWidths = {193, 193, 193, 193, 193};
     private int[] rowHeights = {470, 350, 470, 350, 470};
 
@@ -222,43 +228,17 @@ public class Trail {
         trailPaint.setColor(Color.YELLOW);
         trailPaint.setStyle(Paint.Style.FILL);
 
-        // Variabili per calcolare la direzione del movimento
-        float[] previousPoint = null;
-
         for (float[] point : trail) {
-            float trailWidth, trailHeight;
 
-            if (previousPoint != null) {
-                float dx = point[0] - previousPoint[0];
-                float dy = point[1] - previousPoint[1];
-
-                // Calcola direzione del movimento
-                if (Math.abs(dx) > Math.abs(dy)) {
-                    // Movimento orizzontale
-                    trailWidth = TRAIL_SIZE;
-                    trailHeight = TRAIL_SIZE;
-                } else {
-                    // Movimento verticale
-                    trailWidth = TRAIL_SIZE;
-                    trailHeight = TRAIL_SIZE;
-                }
-            } else {
-                // Default dimensions (prima iterazione)
-                trailWidth = TRAIL_SIZE;
-                trailHeight = TRAIL_SIZE;
-            }
-
+            Log.d("puntatore", "point[0]: " + point[0] + " point[1]: " + point[1]);
             // Disegna il rettangolo del trail
             canvas.drawRect(
-                    point[0] - trailWidth / 2,
-                    point[1] - trailHeight / 2,
-                    point[0] + trailWidth / 2,
-                    point[1] + trailHeight / 2,
+                    point[0] - TRAIL_SIZE / 2,
+                    point[1] - TRAIL_SIZE / 2,
+                    point[0] + TRAIL_SIZE / 2,
+                    point[1] + TRAIL_SIZE / 2,
                     trailPaint
             );
-
-            // Aggiorna il punto precedente
-            previousPoint = point;
         }
         // Disegna le celle completate
         Paint cellPaint = new Paint();
@@ -320,10 +300,5 @@ public class Trail {
     public int getCounterPoints(){
         return counterPoints;
     }
-
-
-
-
-
 
 }
