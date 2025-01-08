@@ -40,8 +40,13 @@ public class Trail {
         }
         return instance;
     }
+    int gridXTrail = 0;
+    int gridYTrail = 0;
     public void addTrailPoint() {
-
+        if (trail.size() >= 60) {
+            trail.clear();
+            uniqueTrailPoints.clear(); // Pulisci anche i punti univoci
+        }
         // Ottieni la posizione attuale del giocatore
         float x = player.getX();
         float y = player.getY();
@@ -79,36 +84,91 @@ public class Trail {
         String pointKey = gridX + "," + gridY;
         if (!uniqueTrailPoints.contains(pointKey)) {
             trail.add(new float[]{alignedX, alignedY});
+
+// Stampa i punti che vengono aggiunti
+            Log.d("TrailPointSSS", "Added point: X = " + alignedX + ", Y = " + alignedY);
             uniqueTrailPoints.add(pointKey);
             Log.d("Trail", "Aggiunto punto: " + pointKey);
         }
+        // Controlla se il trail è chiuso
+        if (isTrailClosed()) {
+
+            Log.d("TrailClosedCheck", "QUI");
+                checkCellCompletion(alignedX, alignedY);
+        }
     }
+    private boolean isTrailClosed() {
+        // Controlla se il trail ha almeno 2 punti (per chiudersi servono almeno un inizio e una fine)
+        if (trail.size() < 30) {
+            return false;
+        }
+
+        // Ottieni il primo punto del trail (startPoint)
+        float[] startPoint = trail.get(0);
+        float startX = startPoint[0];
+        float startY = startPoint[1] + mainActivity.getStatusBarHeight();
+
+        // Ottieni l'ultimo punto del trail (endPoint)
+        float[] endPoint = trail.get(trail.size() - 1);
+        float endX = endPoint[0];
+        float endY = endPoint[1] + mainActivity.getStatusBarHeight();
+
+        // Definisci una tolleranza (ad esempio 5 unità) per considerare il trail chiuso
+        float tolerance = 50.0f;
+
+        // Confronta le coordinate con la tolleranza
+        boolean isClosed = Math.abs(startX - endX) <= tolerance && Math.abs(startY - endY) <= tolerance;
+        float[] penultimatePoint = trail.get(trail.size() - 2); // Il penultimo punto
+        // Log per debug
+        Log.d("TrailClosedCheck", "StartPoint: (" + startX + ", " + startY + ")");
+        Log.d("TrailClosedCheck", "EndPoint: (" + endX + ", " + endY + ")");
+        Log.d("TrailClosedCheck", "Is Trail Closed? " + isClosed);
+        if(isClosed == true){
+            gridXTrail = getColumnIndex(penultimatePoint[0]);
+            gridYTrail = getRowIndex(penultimatePoint[1]);
+        }
+        return isClosed;
+    }
+
+
 
     private int[] columnWidths = {193, 193, 193, 193, 193};
     private int[] rowHeights = {470, 350, 470, 350, 470};
 
-    public void checkCellCompletion(float x, float y) {
-        if (trail.size() < 4){ Log.d("Aggiunta", "trail: " + trail.size()); return;} // Serve almeno un quadrato completo
-        // Trova in quale cella si trova il player
-        int gridX = getColumnIndex(x); //restituisce l'indice della colonna in base alla coordinata x
-        int gridY = getRowIndex(y); //restituisce l'indice della riga in base alla coordinata y
-        Log.d("Griglia:", "gridX: "+ gridX + "gridY" + gridY);
-        // Salta il controllo se il player è fuori dalla griglia
-        if (gridX == -1 || gridY == -1) return;
+    private boolean cellBeingCompleted = false;
 
-        String cellKey = gridX + "," + gridY; //chiave univoca per la cella corrente, combinando l'indice della colonna (gridX) e della riga (gridY)
+    public void checkCellCompletion(float x, float y) {
+        // Trova in quale cella si trova il player
+        int gridX = getColumnIndex(x); // Indice della colonna in base alla coordinata x
+        int gridY = getRowIndex(y);   // Indice della riga in base alla coordinata y
+
+        Log.d("Griglia", "gridX: " + gridX + " gridY: " + gridY);
+
+        // Salta il controllo se il player è fuori dalla griglia
+        if (gridXTrail == -1 || gridYTrail == -1) return;
+
+        // Crea una chiave univoca per identificare la cella
+        String cellKey = gridXTrail + "," + gridYTrail;
 
         // Controlla se la cella è già completata
         if (completedCells.contains(cellKey)) return;
 
-        // Verifica se i punti del trail circondano la cella corrente
-        boolean closed = isCellSurrounded(gridX, gridY);
+    Log.d("TrailClosedCheck", "QUI2");
+        // Verifica se il trail circonda la cella
+        boolean closed = isCellSurrounded(gridXTrail, gridYTrail);
 
         if (closed) {
+            // Aggiungi la cella completata all'elenco
             completedCells.add(cellKey);
             Log.d("Cell Completion", "Cella completata: " + cellKey);
+
+            // Resetta il trail
+            trail.clear();
+            uniqueTrailPoints.clear(); // Pulisci anche i punti univoci
         }
     }
+
+
 
     private int getColumnIndex(float posX) {
         int currentX = 55; // Inizio della griglia
@@ -133,10 +193,11 @@ public class Trail {
     }
 
     private boolean isCellSurrounded(int gridX, int gridY) {
+        Log.d("TrailClosedCheck", "QUI3");
         // Calcola i limiti della cella
-        int cellLeft = getCellStartX(gridX); //coordinata X del lato sinistro della cella
-        int cellRight = getCellEndX(gridX);  //coordinata X del lato destro della cella
-        int cellTop = getCellStartY(gridY) + mainActivity.getStatusBarHeight(); //coordinata Y del lato superiore della cella
+        int cellLeft = getCellStartX(gridX)  ; //coordinata X del lato sinistro della cella
+        int cellRight = getCellEndX(gridX) ;  //coordinata X del lato destro della cella
+        int cellTop = getCellStartY(gridY); //coordinata Y del lato superiore della cella
         int cellBottom = getCellEndY(gridY); //coordinata Y del lato inferiore della cella
 
         // Log dei valori calcolati
@@ -144,7 +205,7 @@ public class Trail {
                 ", Top: " + cellTop + ", Bottom: " + cellBottom);
 
 
-        int tolerance = 100;  // tolleranza per evitare errori di floating point
+        int tolerance = 5;  // tolleranza per evitare errori di floating point
 
         // Estendi i confini della cella con la tolleranza, questo garantisce che piccoli errori di posizionamento non impediscano alla funzione di rilevare il contatto.
         float extendedLeft = cellLeft - tolerance;  //lato sinistro esteso verso sinistra di tolerance
@@ -160,37 +221,23 @@ public class Trail {
         for (float[] point : trail) {
             float px = point[0];
             float py = point[1];
-
-            if (px >= extendedLeft && px <= extendedLeft + tolerance && py >= cellTop && py <= cellBottom) { //se px è compreso tra extendedLeft e extendedLeft + tolerance, e il punto si trova verticalmente all'interno della cella (py tra cellTop e cellBottom), allora left diventa true
+            Log.d("PX", "px: " + px);
+            Log.d("PY", "py: " + py);
+            if (px >= extendedLeft && py >= cellTop && py <= cellBottom) { //se px è compreso tra extendedLeft e extendedLeft + tolerance, e il punto si trova verticalmente all'interno della cella (py tra cellTop e cellBottom), allora left diventa true
                 Log.d("GridInfogf", "Cell boundaries QUI1");
                 left = true;
             }
-            if (px >= extendedRight - tolerance && px <= extendedRight && py >= cellTop && py <= cellBottom) { //se px è compreso tra extendedRight - tolerance e extendedRight, e il punto si trova verticalmente all'interno della cella, allora right diventa true
+            if (px <= extendedRight && py >= cellTop && py <= cellBottom) { //se px è compreso tra extendedRight - tolerance e extendedRight, e il punto si trova verticalmente all'interno della cella, allora right diventa true
                 Log.d("GridInfogf", "Cell boundaries QUI2");
                 right = true;
             }
-            if (py >= extendedTop && py <= extendedTop + tolerance && px >= cellLeft && px <= cellRight) { //se py è compreso tra extendedTop e extendedTop + tolerance, e il punto si trova orizzontalmente all'interno della cella (px tra cellLeft e cellRight), allora top diventa true
+            if (py >= extendedTop && px >= cellLeft && px <= cellRight) { //se py è compreso tra extendedTop e extendedTop + tolerance, e il punto si trova orizzontalmente all'interno della cella (px tra cellLeft e cellRight), allora top diventa true
                 Log.d("GridInfogf", "Cell boundaries QUI3");
                 top = true;
             }
-            if (py >= extendedBottom - tolerance && py <= extendedBottom && px >= cellLeft && px <= cellRight) { //se py è compreso tra extendedBottom - tolerance e extendedBottom, e il punto si trova orizzontalmente all'interno della cella, allora bottom diventa true
+            if (py <= extendedBottom && px >= cellLeft && px <= cellRight) { //se py è compreso tra extendedBottom - tolerance e extendedBottom, e il punto si trova orizzontalmente all'interno della cella, allora bottom diventa true
                 Log.d("GridInfogf", "Cell boundaries QUI4");
                 bottom = true;
-            }if (!left && px < extendedLeft) {
-                left = true;
-                Log.d("Debug", "Left boundary touched");
-            }
-            if (!right && px > extendedRight) {
-                right = true;
-                Log.d("Debug", "Right boundary touched");
-            }
-            if (!top && py < extendedTop) {
-                top = true;
-                Log.d("Debug", "Top boundary touched");
-            }
-            if (!bottom && py > extendedBottom) {
-                bottom = true;
-                Log.d("Debug", "Bottom boundary touched");
             }
             // Se tutti i confini sono toccati, la cella è circondata
             if (left && right && top && bottom) {
@@ -227,7 +274,7 @@ public class Trail {
     }
 
     private int getCellEndY(int rowIndex) {
-        return getCellStartY(rowIndex + 1) - mainActivity.getStatusBarHeight(); // Posizione del bordo inferiore della cella
+        return getCellStartY(rowIndex + 1) ; // Posizione del bordo inferiore della cella
     }
 
     public void draw(Canvas canvas) {

@@ -111,7 +111,7 @@ public class GameView extends SurfaceView implements Runnable {
         rowHeights = new int[]{470, 350, 470, 350, 470};
         Bitmap sceneBitmap = getBitmapFromScene();
         initializeWalkableMap(sceneBitmap);
-        player = new Player(context, R.drawable.player_bross, screenWidth, screenHeight, 6, fieldWidth / 2, fieldHeight - 200, walkableMap, mainActivity);
+        player = new Player(context, R.drawable.player_bross, screenWidth, screenHeight, 6, 443, 818, walkableMap, mainActivity);
         initializePlayerPosition();
         bots = new ArrayList<>(); // Inizializza la lista
         initializeBots(); // Aggiungi bot alla lista
@@ -177,9 +177,9 @@ public class GameView extends SurfaceView implements Runnable {
         for (Bot bot: bots){
             bot.moveBotTowardsTarget();
 
-            if(checkCollision(player, bot)){
+            /*if(checkCollision(player, bot)){
                 handleCollision(player, bot);
-            }
+            }*/
         }
         // Sposta il giocatore al lato opposto quando tocca un bordo
         if (player.getX() < 0) {

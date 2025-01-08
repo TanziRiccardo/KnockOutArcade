@@ -54,6 +54,8 @@ public class Player {
     private static final int TRAIL_SIZE = 20; // Dimensione del trail
     private MainActivity mainActivity;
     private Trail traill;
+    private long lastCheckTime = 0;  // Variabile per memorizzare l'ultimo tempo di controllo
+    private static final long CHECK_INTERVAL = 2000;  // Intervallo di tempo tra un controllo e l'altro (es. 500 ms)
     public Player(Context context, int resourceId, int screenWidth, int screenHeight, int totalFrames, int x, int y, boolean[][] walkableMap, MainActivity mainActivity) {
         this.mainActivity = mainActivity;
         traill = Trail.getInstance(x, y, previousX, previousY, walkableMap, mainActivity, this);
@@ -144,8 +146,6 @@ public class Player {
         frameRect.top = row * frameHeight;
         frameRect.right = frameRect.left + frameWidth;
         frameRect.bottom = frameRect.top + frameHeight;
-        // Controlla se una cella è stata completata
-        traill.checkCellCompletion(x, y);
     }
 
 
