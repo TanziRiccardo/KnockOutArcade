@@ -1,5 +1,6 @@
 package com.example.knockoutarcade;
 
+
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -23,6 +24,7 @@ public class Trail {
     private boolean[][] walkableMap;
     private MainActivity mainActivity;
     private Player player;
+    private static Trail instance;
     public Trail(float x, float y, float previousX, float previousY, boolean[][] walkableMap, MainActivity mainActivity, Player player) {
         this.x = x;
         this.y = y;
@@ -31,13 +33,18 @@ public class Trail {
         this.walkableMap = walkableMap;
         this.mainActivity = mainActivity;
         this.player = player;
+        Log.d("TrailDebug", "Creazione nuova istanza di Trail");
+    }    public static Trail getInstance(float x, float y, float previousX, float previousY, boolean[][] walkableMap, MainActivity mainActivity, Player player) {
+        if (instance == null) {
+            instance = new Trail(x, y, previousX, previousY, walkableMap, mainActivity, player);
+        }
+        return instance;
     }
     public void addTrailPoint() {
+
         // Ottieni la posizione attuale del giocatore
         float x = player.getX();
         float y = player.getY();
-        float playerWidth = player.getWidth();
-        float playerHeight = player.getHeight();
 
         // Ottieni la mappa percorribile
         boolean[][] walkableMap = player.getWalkableMap();
@@ -45,9 +52,9 @@ public class Trail {
         int mapHeight = walkableMap[0].length;
 
         // Calcola le coordinate centrate sulla griglia
-        float alignedX = ((x + player.getWidth()/(2)) / GRID_SIZE) * GRID_SIZE;
+        float alignedX = ((x + player.getWidth()/(2)) / GRID_SIZE) * GRID_SIZE; //divido per la dimensione della griglia (GRID_SIZE) e poi moltiplico di nuovo, per ottenere una coordinata "snap" ai bordi della cella
         float alignedY = ((y + player.getHeight()/(2)) / GRID_SIZE) * GRID_SIZE;
-        int gridX = Math.round(alignedX / GRID_SIZE);
+        int gridX = Math.round(alignedX / GRID_SIZE); //le coordinate vengono trasformate in indici di rifa e colonna della griglia
         int gridY = Math.round(alignedY / GRID_SIZE);
         Log.d("Grigliatore", "GridX: " + alignedX + " GridY: " + alignedY );
         // Controlla se le coordinate sono all'interno dei limiti della mappa
@@ -83,13 +90,13 @@ public class Trail {
     public void checkCellCompletion(float x, float y) {
         if (trail.size() < 4){ Log.d("Aggiunta", "trail: " + trail.size()); return;} // Serve almeno un quadrato completo
         // Trova in quale cella si trova il player
-        int gridX = getColumnIndex(x);
-        int gridY = getRowIndex(y);
+        int gridX = getColumnIndex(x); //restituisce l'indice della colonna in base alla coordinata x
+        int gridY = getRowIndex(y); //restituisce l'indice della riga in base alla coordinata y
         Log.d("Griglia:", "gridX: "+ gridX + "gridY" + gridY);
         // Salta il controllo se il player è fuori dalla griglia
         if (gridX == -1 || gridY == -1) return;
 
-        String cellKey = gridX + "," + gridY;
+        String cellKey = gridX + "," + gridY; //chiave univoca per la cella corrente, combinando l'indice della colonna (gridX) e della riga (gridY)
 
         // Controlla se la cella è già completata
         if (completedCells.contains(cellKey)) return;
@@ -127,23 +134,23 @@ public class Trail {
 
     private boolean isCellSurrounded(int gridX, int gridY) {
         // Calcola i limiti della cella
-        int cellLeft = getCellStartX(gridX);
-        int cellRight = getCellEndX(gridX);
-        int cellTop = getCellStartY(gridY) + mainActivity.getStatusBarHeight();
-        int cellBottom = getCellEndY(gridY);
+        int cellLeft = getCellStartX(gridX); //coordinata X del lato sinistro della cella
+        int cellRight = getCellEndX(gridX);  //coordinata X del lato destro della cella
+        int cellTop = getCellStartY(gridY) + mainActivity.getStatusBarHeight(); //coordinata Y del lato superiore della cella
+        int cellBottom = getCellEndY(gridY); //coordinata Y del lato inferiore della cella
 
         // Log dei valori calcolati
         Log.d("GridInfo", "Cell boundaries - Left: " + cellLeft + ", Right: " + cellRight +
                 ", Top: " + cellTop + ", Bottom: " + cellBottom);
 
-        // Aggiungi tolleranza ai confini
-        float tolerance = 100;  // Aggiungi tolleranza per evitare errori di floating point
 
-        // Estendi i confini della cella con la tolleranza
-        float extendedLeft = cellLeft - tolerance;
-        float extendedRight = cellRight + tolerance;
-        float extendedTop = cellTop - tolerance;
-        float extendedBottom = cellBottom + tolerance;
+        int tolerance = 100;  // tolleranza per evitare errori di floating point
+
+        // Estendi i confini della cella con la tolleranza, questo garantisce che piccoli errori di posizionamento non impediscano alla funzione di rilevare il contatto.
+        float extendedLeft = cellLeft - tolerance;  //lato sinistro esteso verso sinistra di tolerance
+        float extendedRight = cellRight + tolerance; //lato destro esteso verso destra di tolerance
+        float extendedTop = cellTop - tolerance; //lato superiore esteso verso l'alto di tolerance
+        float extendedBottom = cellBottom + tolerance; //Lato inferiore esteso verso il basso di tolerance
         Log.d("CellBoundaries", "GridX: " + gridX + ", GridY: " + gridY +
                 ", Left: " + extendedLeft + ", Right: " + extendedRight +
                 ", Top: " + extendedTop + ", Bottom: " + extendedBottom);
@@ -154,19 +161,19 @@ public class Trail {
             float px = point[0];
             float py = point[1];
 
-            if (px >= extendedLeft && px <= extendedLeft + tolerance && py >= cellTop && py <= cellBottom) {
+            if (px >= extendedLeft && px <= extendedLeft + tolerance && py >= cellTop && py <= cellBottom) { //se px è compreso tra extendedLeft e extendedLeft + tolerance, e il punto si trova verticalmente all'interno della cella (py tra cellTop e cellBottom), allora left diventa true
                 Log.d("GridInfogf", "Cell boundaries QUI1");
                 left = true;
             }
-            if (px >= extendedRight - tolerance && px <= extendedRight && py >= cellTop && py <= cellBottom) {
+            if (px >= extendedRight - tolerance && px <= extendedRight && py >= cellTop && py <= cellBottom) { //se px è compreso tra extendedRight - tolerance e extendedRight, e il punto si trova verticalmente all'interno della cella, allora right diventa true
                 Log.d("GridInfogf", "Cell boundaries QUI2");
                 right = true;
             }
-            if (py >= extendedTop && py <= extendedTop + tolerance && px >= cellLeft && px <= cellRight) {
+            if (py >= extendedTop && py <= extendedTop + tolerance && px >= cellLeft && px <= cellRight) { //se py è compreso tra extendedTop e extendedTop + tolerance, e il punto si trova orizzontalmente all'interno della cella (px tra cellLeft e cellRight), allora top diventa true
                 Log.d("GridInfogf", "Cell boundaries QUI3");
                 top = true;
             }
-            if (py >= extendedBottom - tolerance && py <= extendedBottom && px >= cellLeft && px <= cellRight) {
+            if (py >= extendedBottom - tolerance && py <= extendedBottom && px >= cellLeft && px <= cellRight) { //se py è compreso tra extendedBottom - tolerance e extendedBottom, e il punto si trova orizzontalmente all'interno della cella, allora bottom diventa true
                 Log.d("GridInfogf", "Cell boundaries QUI4");
                 bottom = true;
             }if (!left && px < extendedLeft) {
@@ -187,6 +194,7 @@ public class Trail {
             }
             // Se tutti i confini sono toccati, la cella è circondata
             if (left && right && top && bottom) {
+                counterPoints = counterPoints + 60;
                 return true;
             }
         }
@@ -288,16 +296,11 @@ public class Trail {
 
             // Disegna il testo al centro
             canvas.drawText("+60", centerX, textCenterY, textPaint);
-            counter();
+            Log.d("puntiorarararara", "punti get: " + getCounterPoints());
 
         }
     }
-
-    private void counter(){
-        counterPoints += 60;
-    }
-
-    public int getCounterPoints(){
+    public synchronized int getCounterPoints() {
         return counterPoints;
     }
 

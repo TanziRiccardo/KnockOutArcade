@@ -22,6 +22,7 @@ public class GameOverActivity extends Activity {
     private static final String PREFS_NAME = "GamePrefs";
     private static final String KEY_SCORES = "scores";
     private Button restartButton;
+    private Button clearScoresButton;
     private ListView scoreListView;
 
     @Override
@@ -31,7 +32,7 @@ public class GameOverActivity extends Activity {
 
         restartButton = findViewById(R.id.restart_button);
         scoreListView = findViewById(R.id.scoreListView);
-
+        clearScoresButton = findViewById(R.id.clear_score);
         // Recupera i punteggi
         List<Integer> scores = loadScores(this);
 
@@ -49,6 +50,10 @@ public class GameOverActivity extends Activity {
 
         // Imposta il listener per il bottone di riavvio
         restartButton.setOnClickListener(v -> restartGame());
+        clearScoresButton.setOnClickListener(v -> {
+            resetScores(this); // Azzeramento dei punteggi
+            recreate(); // Ricarica l'activity per aggiornare la lista
+        });
     }
 
     private List<Integer> loadScores(Context context) {
@@ -63,6 +68,12 @@ public class GameOverActivity extends Activity {
         }
     }
 
+    private void resetScores(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.remove(KEY_SCORES); // Rimuove la chiave dei punteggi
+        editor.apply(); // Applica le modifiche
+    }
 
     private void restartGame() {
         Intent intent = new Intent(GameOverActivity.this, MainActivity.class);

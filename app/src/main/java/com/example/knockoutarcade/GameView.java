@@ -78,6 +78,7 @@ public class GameView extends SurfaceView implements Runnable {
     private static final int TRAIL_LIFETIME = 3000; // Durata di ogni traccia in millisecondi
     private MainActivity mainActivity;
     private Trail traill;
+    private int counterPoints;
     public GameView(Context context, int screenWidth, int screenHeight, MainActivity mainActivity) {
         super(context);
         this.mainActivity = mainActivity;
@@ -114,7 +115,8 @@ public class GameView extends SurfaceView implements Runnable {
         initializePlayerPosition();
         bots = new ArrayList<>(); // Inizializza la lista
         initializeBots(); // Aggiungi bot alla lista
-
+        traill = Trail.getInstance(player.getX(), player.getY(), player.getPreviousX(), player.getPreviousY(), walkableMap, mainActivity, player);
+        Log.d("TrailDebug", "Creazione nuova istanza di Trail");
         tolerance = 5;
     }
 
@@ -122,16 +124,19 @@ public class GameView extends SurfaceView implements Runnable {
             bots = new ArrayList<>();
         // Calcolare la posizione del primo bot tra la prima e la seconda riga
         int firstBotY = rowHeights[0] + (rowHeights[1] - rowHeights[0]) / 2; // Posizione tra prima e seconda riga
-        int firstBotX = columnWidths[1] + 55; // Colonna tra la prima e la seconda colonna
+        int firstBotX = columnWidths[1] + 60; // Colonna tra la prima e la seconda colonna
 
         // Calcolare la posizione del secondo bot tra l'ultima e la penultima riga
-        int secondBotY = 600; // Posizione tra l'ultima e la penultima riga
-        int secondBotX = 556; // Colonna tra l'ultima e la penultima colonna
+        int secondBotY = rowHeights[0] + rowHeights[1] + rowHeights[2] + rowHeights[3] + mainActivity.getStatusBarHeight() + 55; // Posizione tra l'ultima e la penultima riga
+        int secondBotX = columnWidths[1] + 60; // Colonna tra l'ultima e la penultima colonna
 
+        // Calcolare la posizione del terzo bot tra l'ultima e la penultima riga
+        int thirdBotY = rowHeights[0] + rowHeights[1] + rowHeights[2] + rowHeights[3] + mainActivity.getStatusBarHeight() + 55; // Posizione tra l'ultima e la penultima riga
+        int thirdBotX = columnWidths[0] + columnWidths[1] + columnWidths[2] + columnWidths[3] + 60; // Colonna tra l'ultima e la penultima colonna
         // Posizionare i bot
         Bot luigiBot = new Bot(getContext(), R.drawable.luigi_bot, walkableMap, firstBotX, firstBotY, Bot.BotType.LUIGI, screenWidthapp, fieldHeight); // Primo bot
-        Bot toadBot = new Bot(getContext(), R.drawable.toad_bot, walkableMap, 231, 1787, Bot.BotType.TOAD, screenWidthapp, fieldHeight); // Secondo bot
-        Bot fireBot = new Bot(getContext(), R.drawable.fire_bot, walkableMap, 838, 1787, Bot.BotType.FIRE, screenWidthapp, fieldHeight);
+        Bot toadBot = new Bot(getContext(), R.drawable.toad_bot, walkableMap, secondBotX, secondBotY, Bot.BotType.TOAD, screenWidthapp, fieldHeight); // Secondo bot
+        Bot fireBot = new Bot(getContext(), R.drawable.fire_bot, walkableMap, thirdBotX, thirdBotY, Bot.BotType.FIRE, screenWidthapp, fieldHeight);
         bots.add(luigiBot);
         bots.add(toadBot);
         bots.add(fireBot);
@@ -169,16 +174,12 @@ public class GameView extends SurfaceView implements Runnable {
         }
         player.update(); // Aggiorna animazioni o stato del giocatore
 
-
-        /*if(traill.getCounterPoints() == 1500){
-            showWinScreen();
-        }*/
         for (Bot bot: bots){
             bot.moveBotTowardsTarget();
 
-            /*if(checkCollision(player, bot)){
+            if(checkCollision(player, bot)){
                 handleCollision(player, bot);
-            }*/
+            }
         }
         // Sposta il giocatore al lato opposto quando tocca un bordo
         if (player.getX() < 0) {
@@ -191,6 +192,9 @@ public class GameView extends SurfaceView implements Runnable {
             player.setY(fieldHeight - player.getHeight()); // Compara al lato inferiore
         } else if (player.getY() + player.getHeight() > fieldHeight) {
             player.setY(0); // Compara al lato superiore
+        }
+        if(traill.getCounterPoints() == 1500){
+            showWinScreen();
         }
     }
 
@@ -206,7 +210,7 @@ public class GameView extends SurfaceView implements Runnable {
         float botTop = bot.getY();
         float botRight = bot.getX() + (bot.getWidth()/9);
         float botBottom = bot.getY() + (bot.getHeight()/2);
-// Log per stampare i dati
+
         Log.d("Collision Info", "Player Coordinates: Left=" + playerLeft + ", Top=" + playerTop + ", Right=" + playerRight + ", Bottom=" + playerBottom);
         Log.d("Collision Info", "Bot Coordinates: Left=" + botLeft + ", Top=" + botTop + ", Right=" + botRight + ", Bottom=" + botBottom);
         // Verifica se le due bounding boxes si sovrappongono
@@ -239,7 +243,7 @@ public class GameView extends SurfaceView implements Runnable {
         animatePlayerFall(player);
 
         // 2. Aggiungi un ritardo per far partire la chiusura dello schermo dopo la caduta
-        new Handler(Looper.getMainLooper()).postDelayed(this::animateScreenClose, 1000);  // Ritardo di 1 secondo
+        new Handler(Looper.getMainLooper()).postDelayed(this::animateScreenClose, 2000);  // Ritardo di 1 secondo
     }
 
     private void animatePlayerFall(Player player) {
@@ -290,7 +294,7 @@ public class GameView extends SurfaceView implements Runnable {
         Canvas canvas = new Canvas(bitmap);
 
         // Disegna lo sfondo
-        canvas.drawBitmap(background, -backgroundOffsetX, 0, null);
+        canvas.drawBitmap(background, 0, 0, null);
 
         // Disegna la griglia
         drawGrid(canvas);
@@ -357,8 +361,6 @@ public class GameView extends SurfaceView implements Runnable {
         if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_MOVE) {
             // Verifica se il giocatore vuole andare a destra
             if (isTouchInsideArea(touchX, touchY, screenWidthapp - 650, fieldHeight - 250, 100, 100)) {
-                Log.d("Movement", "cliccato destra");
-                Log.d("Movementyyyyy", "player.getX(): " + player.getX() + "player.getWidth()" + player.getWidth() + "CellWidth: " + cellWidth*3);
                 if (player.getX() + player.getWidth() < (cellWidth * 3) || player.getX() + player.getWidth() > (cellWidth * 3)) {
                     int newX = (int) (player.getX() + player.getWidth() + 1);
                     if (canMoveTo(newX, (int) player.getY() + 1) ||
@@ -482,8 +484,6 @@ public class GameView extends SurfaceView implements Runnable {
         // Cancella il canvas
         canvas.drawColor(Color.BLACK);
 
-        // Disegna lo sfondo
-        updateBackgroundPosition();
         canvas.drawBitmap(background, -backgroundOffsetX, 0, null);
 
         drawGrid(canvas);
@@ -505,7 +505,7 @@ public class GameView extends SurfaceView implements Runnable {
         rectPaint.setStyle(Paint.Style.STROKE); // Modalità bordo (no riempimento)
         rectPaint.setColor(Color.RED);          // Colore del rettangolo
         rectPaint.setStrokeWidth(5);            // Spessore della linea
-
+/*
         // Disegna il rettangolo del giocatore
         float playerLeft = player.getX();
         float playerTop = player.getY();
@@ -521,7 +521,7 @@ public class GameView extends SurfaceView implements Runnable {
             float botBottom = botTop + (bot.getHeight() / 3);
             canvas.drawRect(botLeft, botTop, botRight, botBottom, rectPaint);
         }
-
+*/
         // Effetto di chiusura dello schermo (cerchio nero)
         if (screenCloseProgress > 0) {
             int centerX = getWidth() / 2;
@@ -535,12 +535,11 @@ public class GameView extends SurfaceView implements Runnable {
             // Disegna il cerchio nero
             canvas.drawCircle(centerX, centerY, currentRadius, blackPaint);
 
-                showGameOverScreen(); // Chiama il metodo per mostrare la schermata di Game Over
+            showGameOverScreen(); // Chiama il metodo per mostrare la schermata di Game Over
 
 
         }
     }
-    // Metodo per salvare il punteggio
     private void savePlayerScore(Context context, int score) {
         SharedPreferences prefs = context.getSharedPreferences("GamePrefs", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
@@ -565,7 +564,9 @@ public class GameView extends SurfaceView implements Runnable {
     }
     private void showGameOverScreen() {
         Intent intent = new Intent(getContext(), GameOverActivity.class);
-        savePlayerScore(getContext(), traill.getCounterPoints()); // Passa il punteggio del giocatore
+        counterPoints += traill.getCounterPoints();
+        savePlayerScore(getContext(), counterPoints); // Passa il punteggio del giocatore
+        Log.d("puntiora", "punti game: " + counterPoints);
         getContext().startActivity(intent);
     }
     private void showWinScreen() {
@@ -611,9 +612,9 @@ public class GameView extends SurfaceView implements Runnable {
         int borderWidth = 30; // Spessore del bordo decorativo
         int marginOffset = 25;
 
-        // Definisci larghezze delle colonne (valori personalizzabili)
+        //  larghezze delle colonne (valori personalizzabili)
         int[] columnWidths = {193, 193, 193, 193, 193};
-        // Definisci altezze delle righe (valori personalizzabili)
+        //  altezze delle righe (valori personalizzabili)
         int[] rowHeights = {470, 350, 470, 350, 470};
 
         // Calcola la posizione delle linee verticali tenendo conto del bordo
@@ -635,19 +636,6 @@ public class GameView extends SurfaceView implements Runnable {
         }
 
         Log.d("statusBarENa", "STATUS" + mainActivity.getStatusBarHeight() );
-    }
-    private void updateBackgroundPosition() {
-        if (backgroundSpeed != 0) {
-            // Muove lo sfondo in base alla velocità del giocatore
-            backgroundOffsetX -= backgroundSpeed;
-        }
-
-        // Gestione ciclica dello sfondo: quando l'offset esce dallo schermo, lo resettiamo
-        if (backgroundOffsetX <= -fieldWidth) {
-            backgroundOffsetX = 0;
-        } else if (backgroundOffsetX >= fieldWidth) {
-            backgroundOffsetX = 0;
-        }
     }
     public boolean[][] getWalkableMap() {
         return walkableMap;

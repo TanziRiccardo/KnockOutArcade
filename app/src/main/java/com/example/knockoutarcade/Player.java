@@ -56,7 +56,7 @@ public class Player {
     private Trail traill;
     public Player(Context context, int resourceId, int screenWidth, int screenHeight, int totalFrames, int x, int y, boolean[][] walkableMap, MainActivity mainActivity) {
         this.mainActivity = mainActivity;
-        traill = new Trail(x, y, previousX, previousY, walkableMap, mainActivity, this);
+        traill = Trail.getInstance(x, y, previousX, previousY, walkableMap, mainActivity, this);
         this.spriteSheet = BitmapFactory.decodeResource(context.getResources(), resourceId);
         this.screenWidth = screenWidth;
         this.screenHeight = screenHeight;
